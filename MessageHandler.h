@@ -10,11 +10,53 @@ File:           MessageHandler.h
 #include <WinUser.h>
 #include <WinBase.h>
 
-LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+HINSTANCE ProgramInstance;                      //Instance of the program
+
+LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    //Main window procedure
+LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);        //Button control procedure
+
+/* Control event types */
+typedef void(*ButtonClickEvent)();              //Button_Click
 
 /* Description:    Button control class */
 class IceButton {
-    char        *Caption;
+private:
+    char                *Caption;
+    ButtonClickEvent    EventFunction;
+    HWND                hWnd;
 
-    IceButton(char *Caption, )
+public:
+    IceButton(char *Caption, int X, int Y, int Width, int Height, HWND ParentHwnd, ButtonClickEvent Event) {
+        EventFunction = Event;
+        hWnd = CreateWindowEx(NULL, "IceButton", Caption, WS_CHILD | WS_VISIBLE, X, Y,
+            Width, Height, ParentHwnd, (HMENU)0, ProgramInstance, NULL);
+        SetProp(hWnd, "Event", (HANDLE)EventFunction);
+    }
+
+    /*
+    Description:    Set the caption of the button control
+    Args:           Caption: New caption
+    */
+    void SetCaption(char *Caption) {
+        SetWindowText(hWnd, Caption);
+    }
+
+    /*
+    Description:    Set the visiblility of the button control
+    Args:           Visible: New visibility status
+    */
+    void SetVisible(bool Visible) {
+        if (Visible)
+            ShowWindow(hWnd, SW_SHOW);
+        else
+            ShowWindow(hWnd, SW_HIDE);
+    }
+
+    /*
+    Description:    Set the enabled status of the button control
+    Args:           Visible: New enabled status
+    */
+    void SetEnable(bool Enabled) {
+        EnableWindow(hWnd, Enabled);
+    }
 }

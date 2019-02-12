@@ -13,5 +13,6 @@ Args:           All parameters are unused
 Return:         Result of DialogBox
 */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrebInstance, LPSTR lpCmdLine, int nShowCmd) {
+    ProgramInstance = hInstance;                                            //Record program instance
     return DialogBox(hInstance, IDD_MAINWINDOW, NULL, MainWindowProc);
 }
