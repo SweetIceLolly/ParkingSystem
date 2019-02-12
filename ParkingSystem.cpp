@@ -7,6 +7,11 @@ File:           ParkingSystem.cpp
 
 #include "MessageHandler.h"
 
+/*
+Description:    The entry point of the program
+Args:           All parameters are unused
+Return:         Result of DialogBox
+*/
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrebInstance, LPSTR lpCmdLine, int nShowCmd) {
     return DialogBox(hInstance, IDD_MAINWINDOW, NULL, MainWindowProc);
 }

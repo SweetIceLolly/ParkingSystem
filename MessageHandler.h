@@ -11,3 +11,10 @@ File:           MessageHandler.h
 #include <WinBase.h>
 
 LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+/* Description:    Button control class */
+class IceButton {
+    char        *Caption;
+
+    IceButton(char *Caption, )
+}
