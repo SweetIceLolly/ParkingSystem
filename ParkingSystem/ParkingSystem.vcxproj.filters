@@ -4,11 +4,15 @@
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="MessageHandler.h" />
     <ClInclude Include="SettingsWindow.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MessageHandler.cpp" />
     <ClCompile Include="ParkingSystem.cpp" />
     <ClCompile Include="SettingsWindow.cpp" />
     <ClCompile Include="FileManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ParkingSystem.rc" />
   </ItemGroup>
 </Project>

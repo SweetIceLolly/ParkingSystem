@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="MessageHandler.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="SettingsWindow.h" />
   </ItemGroup>
   <ItemGroup>
@@ -20,6 +21,9 @@
     <ClCompile Include="MessageHandler.cpp" />
     <ClCompile Include="ParkingSystem.cpp" />
     <ClCompile Include="SettingsWindow.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ParkingSystem.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{320B9F46-CBF9-4638-9692-D0CB4A2468A3}</ProjectGuid>

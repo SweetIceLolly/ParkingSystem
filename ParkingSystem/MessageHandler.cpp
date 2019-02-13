@@ -7,6 +7,16 @@ File:           MessageHandler.cpp
 
 #include "MessageHandler.h"
 
+HINSTANCE ProgramInstance;                      //Instance of the program
+
+/*
+Description:    This copys hInstance to ProgramInstance
+Args:           hInstance: Program hInstance
+*/
+void RecordProgramInstance(HINSTANCE hInstance) {
+	ProgramInstance = hInstance;
+}
+
 /*
 Description:    Re-register a window class
 Args:           PrevClassName: Previous window class name
@@ -33,7 +43,7 @@ Args:           hWnd: Handle to the window
                 wParam, lParam: Extra infos
 Return:         Result of message handling
 */
-LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
         case WM_CLOSE:                              //Window closing
             DestroyWindow(hWnd);                        //Close the window and exit the program
@@ -53,4 +63,4 @@ Args:           hWnd: Handle to the window
                 wParam, lParam: Extra infos
 Return:         Result of message handling
 */
-LRESULT CALLBACK ButtonProc()
+//LRESULT CALLBACK ButtonProc()
