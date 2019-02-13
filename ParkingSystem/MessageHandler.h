@@ -6,9 +6,6 @@ File:           MessageHandler.h
 */
 
 #include <Windows.h>
-#include <windef.h>
-#include <WinUser.h>
-#include <WinBase.h>
 
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance
