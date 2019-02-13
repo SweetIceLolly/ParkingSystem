@@ -26,11 +26,11 @@ private:
     HWND                hWnd;
 
 public:
-    IceButton(char *Caption, int X, int Y, int Width, int Height, HWND ParentHwnd, ButtonClickEvent Event) {
+    IceButton(wchar_t *Caption, int X, int Y, int Width, int Height, HWND ParentHwnd, ButtonClickEvent Event) {
         EventFunction = Event;
-        hWnd = CreateWindowEx(NULL, "IceButton", Caption, WS_CHILD | WS_VISIBLE, X, Y,
+        hWnd = CreateWindowEx(NULL, L"IceButton", Caption, WS_CHILD | WS_VISIBLE, X, Y,
             Width, Height, ParentHwnd, (HMENU)0, ProgramInstance, NULL);
-        SetProp(hWnd, "Event", (HANDLE)EventFunction);
+        SetProp(hWnd, L"Event", (HANDLE)EventFunction);
     }
 
     /*

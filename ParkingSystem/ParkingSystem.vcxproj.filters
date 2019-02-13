@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\Source\SettingsWindow.cpp" />
-    <ClCompile Include="..\Source\FileManager.cpp" />
-    <ClCompile Include="..\Source\MessageHandler.cpp" />
-    <ClCompile Include="..\Source\ParkingSystem.cpp" />
+    <ClInclude Include="FileManager.h" />
+    <ClInclude Include="MessageHandler.h" />
+    <ClInclude Include="SettingsWindow.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Source\SettingsWindow.h" />
-    <ClInclude Include="..\Source\FileManager.h" />
-    <ClInclude Include="..\Source\MessageHandler.h" />
+    <ClCompile Include="MessageHandler.cpp" />
+    <ClCompile Include="ParkingSystem.cpp" />
+    <ClCompile Include="SettingsWindow.cpp" />
+    <ClCompile Include="FileManager.cpp" />
   </ItemGroup>
 </Project>

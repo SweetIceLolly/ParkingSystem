@@ -14,15 +14,15 @@ Args:           PrevClassName: Previous window class name
                 lpfnPrevWndProc: WNDPROC typed variable to store previous window procedure
                 lpfnNewWindowProc: New window procedure
 */
-void ReregisterClass(LPCSTR PrevClassName, LPCSTR NewClassName,
+void ReregisterClass(LPCWSTR PrevClassName, LPCWSTR NewClassName,
                      WNDPROC *lpfnPrevWndProc, WNDPROC lpfnNewWindowProc) {
-    WNDCLASSEX ctlClass = { 0 };
+    WNDCLASSEXW ctlClass = { 0 };
     GetClassInfoEx(ProgramInstance, PrevClassName, &ctlClass);
     *lpfnPrevWndProc = ctlClass.lpfnWndProc;
     ctlClass.lpfnWndProc = lpfnNewWindowProc;
     ctlClass.lpszClassName = NewClassName;
     ctlClass.cbSize = sizeof(WNDCLASSEX);
-    RegisterClass(&ctlClass);
+    RegisterClassEx(&ctlClass);
 }
 
 
