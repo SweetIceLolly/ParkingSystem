@@ -18,6 +18,14 @@ void RecordProgramInstance(HINSTANCE hInstance) {
 }
 
 /*
+Description:    This retrieves hInstance from ProgramInstance
+Return:			Program hInstance
+*/
+HINSTANCE GetProgramInstance(HINSTANCE hInstance) {
+	return ProgramInstance;
+}
+
+/*
 Description:    Re-register a window class
 Args:           PrevClassName: Previous window class name
                 NewClassName: New window class name
