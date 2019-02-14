@@ -12,22 +12,29 @@ HINSTANCE GetProgramInstance();															//This retrieves hInstance from Pr
 INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    //Main window procedure
 LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);        //Button control procedure
 
-/* Control event types */
+/* Event types */
+typedef void(*WindowCreateEvent)();				//Window_Create
 typedef void(*ButtonClickEvent)();              //Button_Click
 
 /* Description:    Button control class */
 class IceButton {
 private:
-    char                *Caption;
-    ButtonClickEvent    EventFunction;
-    HWND                hWnd;
+    char                *Caption;				//Button caption
+    HWND                hWnd;					//Button handle
 
 public:
-    IceButton(wchar_t *Caption, int X, int Y, int Width, int Height, HWND ParentHwnd, ButtonClickEvent Event) {
-        EventFunction = Event;
-        hWnd = CreateWindowEx(NULL, L"IceButton", Caption, WS_CHILD | WS_VISIBLE, X, Y,
-			Width, Height, ParentHwnd, (HMENU)0, GetProgramInstance(), NULL);
-        SetProp(hWnd, L"Event", (HANDLE)EventFunction);
+	ButtonClickEvent    ClickEventFunction;		//Button_Click function
+
+	/*
+	Description:    Constructor of the button control
+	Args:           ParentHwnd: The parent window of the button
+					CtlID: Control ID, usually defined in resource.h
+					Event: Button_Click() handler for the button
+	*/
+    IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event) {
+		ClickEventFunction = Event;
+		hWnd = GetDlgItem(ParentHwnd, CtlID);
+		SetProp(hWnd, L"Event", (HANDLE)Event);
     }
 
     /*
@@ -56,4 +63,15 @@ public:
     void SetEnable(bool Enabled) {
         EnableWindow(hWnd, Enabled);
     }
+
+	/*
+	Description:    Get the caption of the button control
+	Return:			Button caption
+	Note:			For captions that less than 255 bytes only
+	*/
+	wchar_t* GetCaption() {
+		wchar_t buffer[255];
+		GetWindowText(hWnd, buffer, 255);
+		return buffer;
+	}
 };

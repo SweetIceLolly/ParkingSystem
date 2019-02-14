@@ -43,7 +43,6 @@ void ReregisterClass(LPCWSTR PrevClassName, LPCWSTR NewClassName,
     RegisterClassEx(&ctlClass);
 }
 
-
 /*
 Description:    Main window procedure
 Args:           hWnd: Handle to the window
