@@ -7,7 +7,8 @@ File:           MessageHandler.cpp
 
 #include "MessageHandler.h"
 
-HINSTANCE ProgramInstance;                      //Instance of the program
+HINSTANCE	ProgramInstance;						//Instance of the program
+HWND		hwndMainWindow;							//Main window handle
 
 //============================================================================
 /*
@@ -77,6 +78,10 @@ HINSTANCE GetProgramInstance(HINSTANCE hInstance) {
 	return ProgramInstance;
 }
 
+HWND GetMainWindowHandle() {
+	return hwndMainWindow;
+}
+
 /*
 Description:    Re-register a window class
 Args:           PrevClassName: Previous window class name
@@ -105,6 +110,11 @@ Return:         Result of message handling
 */
 INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+	case WM_INITDIALOG:															//Window created
+		hwndMainWindow = hWnd;														//Record the window handle
+		((WindowCreateEvent)lParam)();													//Invoke MainWindow_Create()
+		break;
+
 	case WM_COMMAND:															//Control commands
 		switch (HIWORD(wParam)) {													//Control notification code
 		case BN_CLICKED:																//Button clicked
