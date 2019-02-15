@@ -1,6 +1,8 @@
-﻿  MessageHandler.cpp
+﻿  ParkingSystem.cpp
+k:\exes\programs\source\parkingsystem\parkingsystem\messagehandler.h(77): warning C4172: returning address of local variable or temporary
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(11): error C2512: 'IceButton' : no appropriate default constructor available
   Generating Code...
   Compiling...
-  ParkingSystem.cpp
+  MessageHandler.cpp
+k:\exes\programs\source\parkingsystem\parkingsystem\messagehandler.h(77): warning C4172: returning address of local variable or temporary
   Generating Code...
-  ParkingSystem.vcxproj -> C:\Users\Administrator\Desktop\Projects\ParkingSystem\Debug\ParkingSystem.exe

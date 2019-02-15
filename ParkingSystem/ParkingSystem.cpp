@@ -8,6 +8,8 @@ File:           ParkingSystem.cpp
 #include "MessageHandler.h"
 #include "resource.h"
 
+IceButton btnClose;
+
 /*
 Description:    The entry point of the program
 Args:           All parameters are unused
