@@ -19,6 +19,16 @@ void MainWindow_Create() {
 }
 
 /*
+Description:	To handle Exit menu event
+*/
+void mnuExit_Click() {
+	if (MessageBox(GetMainWindowHandle(), L"Exit Parking System?", L"Confirm", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+		DestroyWindow(GetMainWindowHandle());								//Close the window and exit the program
+		PostQuitMessage(0);
+	}
+}
+
+/*
 Description:    The entry point of the program
 Args:           All parameters are unused
 Return:         Result of DialogBox

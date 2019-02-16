@@ -96,14 +96,16 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		else {
 			if (HIWORD(wParam) == 0) {													//Notification from a menu
-				
+				switch (LOWORD(wParam)) {													//Get menu ID
+				case ID_FILE_EXITSYSTEM:														//Exit System
+					mnuExit_Click();
+				}
 			}
 		}
 		break;
 
 	case WM_CLOSE:																//Window closing
-		DestroyWindow(hWnd);														//Close the window and exit the program
-		PostQuitMessage(0);
+		mnuExit_Click();
 		return TRUE;
         
 	default:
@@ -111,12 +113,3 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
     return 0;
 }
-
-/*
-Description:    Button control procedure
-Args:           hWnd: Handle to the window
-                uMsg: Message code
-                wParam, lParam: Extra infos
-Return:         Result of message handling
-*/
-//LRESULT CALLBACK ButtonProc()

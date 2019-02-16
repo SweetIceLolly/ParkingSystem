@@ -10,9 +10,20 @@ File:           MessageHandler.h
 
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance
-HWND GetMainWindowHandle();
+HWND GetMainWindowHandle();																//This retrieves main window handle
 INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    //Main window procedure
 LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);        //Button control procedure
+
+/* Main window menu events */
+void mnuLog_Click();
+void mnuReport_Click();
+void mnuExit_Click();
+void mnuEnterPatmentMode_Click();
+void mnuStatus_Click();
+void mnuParkClosed_Click();
+void mnuOptions_Click();
+void mnuHowToUse_Click();
+void mnuAbout_Click();
 
 /* Event types */
 typedef void(*WindowCreateEvent)();				//Window_Create
