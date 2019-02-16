@@ -45,4 +45,9 @@
       <Filter>Resource</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\Administrator\Desktop\Park.ico">
+      <Filter>Resource</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

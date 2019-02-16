@@ -29,6 +29,9 @@
     <None Include="..\LICENSE" />
     <None Include="..\README.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\Administrator\Desktop\Park.ico" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{320B9F46-CBF9-4638-9692-D0CB4A2468A3}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

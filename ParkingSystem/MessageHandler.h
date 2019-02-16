@@ -34,7 +34,5 @@ public:
 
 	void SetVisible(bool Visible);
 
-	void SetEnable(bool Enabled);
-	
-	wchar_t* GetCaption();
+	void SetEnabled(bool Enabled);
 };

@@ -46,20 +46,8 @@ void IceButton::SetVisible(bool Visible) {
 Description:    Set the enabled status of the button control
 Args:           Enabled: New enabled status
 */
-void IceButton::SetEnable(bool Enabled) {
+void IceButton::SetEnabled(bool Enabled) {
 	EnableWindow(hWnd, Enabled);
-}
-
-/*
-Description:    Get the caption of the button control
-Return:			Button caption
-Note:			For captions that less than 255 bytes only
-Todo:			Maybe delete?
-*/
-wchar_t* IceButton::GetCaption() {
-	wchar_t buffer[255];
-	GetWindowText(hWnd, buffer, 255);
-	return buffer;
 }
 
 //============================================================================
@@ -75,30 +63,12 @@ void RecordProgramInstance(HINSTANCE hInstance) {
 Description:    This retrieves hInstance from ProgramInstance
 Return:			Program hInstance
 */
-HINSTANCE GetProgramInstance(HINSTANCE hInstance) {
+HINSTANCE GetProgramInstance() {
 	return ProgramInstance;
 }
 
 HWND GetMainWindowHandle() {
 	return hwndMainWindow;
-}
-
-/*
-Description:    Re-register a window class
-Args:           PrevClassName: Previous window class name
-                NewClassName: New window class name
-                lpfnPrevWndProc: WNDPROC typed variable to store previous window procedure
-                lpfnNewWindowProc: New window procedure
-*/
-void ReregisterClass(LPCWSTR PrevClassName, LPCWSTR NewClassName,
-                     WNDPROC *lpfnPrevWndProc, WNDPROC lpfnNewWindowProc) {
-    WNDCLASSEXW ctlClass = { 0 };
-    GetClassInfoEx(ProgramInstance, PrevClassName, &ctlClass);
-    *lpfnPrevWndProc = ctlClass.lpfnWndProc;
-    ctlClass.lpfnWndProc = lpfnNewWindowProc;
-    ctlClass.lpszClassName = NewClassName;
-    ctlClass.cbSize = sizeof(WNDCLASSEX);
-    RegisterClassEx(&ctlClass);
 }
 
 //============================================================================
