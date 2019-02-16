@@ -6,6 +6,7 @@ File:           MessageHandler.h
 */
 
 #include <Windows.h>
+#include "resource.h"
 
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance
@@ -16,6 +17,7 @@ LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 /* Event types */
 typedef void(*WindowCreateEvent)();				//Window_Create
 typedef void(*ButtonClickEvent)();              //Button_Click
+typedef void(*MenuClickEvent)();				//Menu_Click
 
 /* Description:		Button control class */
 class IceButton {
@@ -25,10 +27,6 @@ private:
 
 public:
 	ButtonClickEvent    ClickEventFunction;		//Button_Click() function
-
-	/* Description: This removes the default constructor and = operator of the class */
-	/*IceButton(const IceButton&) = delete;
-	void operator=(const IceButton&) = delete;*/
 	
 	IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event);
 

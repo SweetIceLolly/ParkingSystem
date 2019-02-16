@@ -54,6 +54,7 @@ void IceButton::SetEnable(bool Enabled) {
 Description:    Get the caption of the button control
 Return:			Button caption
 Note:			For captions that less than 255 bytes only
+Todo:			Maybe delete?
 */
 wchar_t* IceButton::GetCaption() {
 	wchar_t buffer[255];
@@ -125,9 +126,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		else {
 			if (HIWORD(wParam) == 0) {													//Notification from a menu
-				switch (LOWORD(wParam)) {
-
-				}
+				
 			}
 		}
 		break;

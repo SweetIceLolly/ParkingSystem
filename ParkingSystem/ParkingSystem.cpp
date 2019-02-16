@@ -6,13 +6,12 @@ File:           ParkingSystem.cpp
 */
 
 #include "MessageHandler.h"
-#include "resource.h"
 
 /*
 Description:    To handle main window creation event
 */
 void MainWindow_Create() {
-	
+	IceMenu mnuExit(GetMainWindowHandle(), ID_FILE_EXITSYSTEM, NULL);
 }
 
 /*
