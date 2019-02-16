@@ -40,10 +40,7 @@ public:
 	ButtonClickEvent    ClickEventFunction;		//Button_Click() function
 	
 	IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event);
-
 	void SetCaption(wchar_t *Caption);
-
 	void SetVisible(bool Visible);
-
 	void SetEnabled(bool Enabled);
 };

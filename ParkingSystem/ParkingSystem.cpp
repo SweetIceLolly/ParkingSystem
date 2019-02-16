@@ -5,17 +5,24 @@ Author:         Hanson
 File:           ParkingSystem.cpp
 */
 
-#include "MessageHandler.h"
+#include "FileManager.h"
 
 /*
 Description:    To handle main window creation event
 */
 void MainWindow_Create() {
 	//Set the icon of the window
-	HICON hIcon = (HICON)LoadImage(GetProgramInstance(), MAKEINTRESOURCE(IDI_MAINICON),
-		IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+	HICON hIcon = (HICON)LoadImage(GetProgramInstance(),
+		MAKEINTRESOURCE(IDI_MAINICON),
+		IMAGE_ICON,
+		GetSystemMetrics(SM_CXSMICON),
+		GetSystemMetrics(SM_CYSMICON), 0);
 	if (hIcon)
 		SendMessage(GetMainWindowHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+
+	//Load data file
+	IceEncryptedFile encFile(L"Log.dat");
+
 }
 
 /*
