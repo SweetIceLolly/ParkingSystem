@@ -8,20 +8,11 @@ File:           ParkingSystem.cpp
 #include "MessageHandler.h"
 #include "resource.h"
 
-IceButton	*btnClose;
-
-/*
-Description:    To handle button click event
-*/
-void btnClose_Click() {
-	MessageBox(GetMainWindowHandle(), L"Ñ÷ë×¼Ó±ù", L"Click!", 0);
-}
-
 /*
 Description:    To handle main window creation event
 */
 void MainWindow_Create() {
-	btnClose = new IceButton(GetMainWindowHandle(), IDC_CLOSE, btnClose_Click);
+	
 }
 
 /*
