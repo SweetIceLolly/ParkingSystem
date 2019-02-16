@@ -116,10 +116,19 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_COMMAND:															//Control commands
-		switch (HIWORD(wParam)) {													//Control notification code
-		case BN_CLICKED:																//Button clicked
-			((ButtonClickEvent)(GetProp((HWND)lParam, L"ClickEvent")))();					//Invoke Button_Click()
-			break;
+		if (lParam != 0) {															//Notification from a control
+			switch (HIWORD(wParam)) {													//Control notification code
+			case BN_CLICKED:																//Button clicked
+				((ButtonClickEvent)(GetProp((HWND)lParam, L"ClickEvent")))();					//Invoke Button_Click()
+				break;
+			}
+		}
+		else {
+			if (HIWORD(wParam) == 0) {													//Notification from a menu
+				switch (LOWORD(wParam)) {
+
+				}
+			}
 		}
 		break;
 
