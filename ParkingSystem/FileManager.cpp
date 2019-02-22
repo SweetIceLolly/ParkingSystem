@@ -6,6 +6,7 @@ File:           FileManager.cpp
 */
 
 #include "FileManager.h"
+#include <string.h>
 
 /*
 Description:    Constructor of encrypted file class
@@ -15,25 +16,25 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 	//Open log file
 	_wfopen_s(&lpFile, FilePath, L"r+");
 	if (!lpFile) {
-		_wfopen_s(&lpFile, FilePath, L"w+");												//Create log file if it doesn't exist
-		if (!lpFile) {																		//Path not accessible
+		_wfopen_s(&lpFile, FilePath, L"w+");													//Create log file if it doesn't exist
+		if (!lpFile) {																			//Path not accessible
 			if (MessageBox(GetMainWindowHandle(),
 				L"Failed to access log file! Continue without log file?",
 				L"Error",
 				MB_ICONERROR | MB_YESNO) == IDNO) {
 
-				DestroyWindow(GetMainWindowHandle());											//Quit the system
+				DestroyWindow(GetMainWindowHandle());												//Quit the system
 				PostQuitMessage(0);
 				return;
 			}
 			
-			if (!SaveFile()) {																//Initalize the file content
+			if (!SaveFile()) {																	//Initalize the file content
 				if (MessageBox(GetMainWindowHandle(),
 					L"Failed to initalize the log file content! Please make sure the file is writable! Continue without log file?",
 					L"Error",
 					MB_ICONERROR | MB_YESNO) == IDNO) {
 
-					DestroyWindow(GetMainWindowHandle());											//Quit the system
+					DestroyWindow(GetMainWindowHandle());												//Quit the system
 					PostQuitMessage(0);
 				}
 				return;
@@ -47,25 +48,25 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 	AddLog(L"1abcde", (SYSTEMTIME)a, (SYSTEMTIME)a, 385, 786);
 	AddLog(L"aefsad", (SYSTEMTIME)a, (SYSTEMTIME)a, 42, 345);
 
-	//Read log file contents
+	//Check file size
 	fseek(lpFile, 0, SEEK_END);
-	int szFile = ftell(lpFile);																//Get file size
+	int		szFile = ftell(lpFile);																//Get file size
 	rewind(lpFile);
-	if (szFile < sizeof(FileContent)) {														//Invalid file size
+	if (szFile < sizeof(FileContent)) {															//Invalid file size
 		if (MessageBox(GetMainWindowHandle(),
 			L"Invalid file content! Create a new file to replace current file?",
 			L"Error",
 			MB_ICONERROR | MB_YESNO) == IDNO) {
 
-			fclose(lpFile);
+			fclose(lpFile);																			//Don't create a new file
 			MessageBox(GetMainWindowHandle(),
 				L"Continuing without log file!",
 				L"Invalid File Content",
 				MB_ICONEXCLAMATION);
 			return;
 		}
-		else {
-			if (!SaveFile()) {
+		else {																					//Create a new file
+			if (!SaveFile()) {																		//Failed to create a new file
 				fclose(lpFile);
 				MessageBox(GetMainWindowHandle(),
 					L"Failed to create a new file! Continuing without log file!",
@@ -75,7 +76,6 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 			}
 		}
 	}
-
 }
 
 /*
@@ -103,14 +103,56 @@ bool IceEncryptedFile::AddLog(wchar_t CarNumber[10], SYSTEMTIME EnterTime, SYSTE
 	return true;
 }
 
+/*
+Description:    Save the file content
+Return:			true if succeed, false otherwise
+*/
 bool IceEncryptedFile::SaveFile() {
 	if (!lpFile)																				//Continued without log file
 		return false;
 	
+	int		szFile = sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(LogInfo) * FileContent.ElementCount;
+	BYTE	*Buffer = new BYTE[szFile];															//Allocate binary content buffer
+
+	memcpy(Buffer, FileContent.Password, sizeof(wchar_t) * 20);									//Password
+	memcpy(Buffer + sizeof(wchar_t) * 20, &(FileContent.ElementCount), sizeof(UINT));			//Element count
+	memcpy(Buffer + sizeof(wchar_t)* 20 + 4, FileContent.LogData.data(),
+		sizeof(LogInfo)* FileContent.ElementCount);												//All log data
+	int KeyLen = lstrlenW(FileContent.Password);
+	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));		//Encrypt binary data
 	rewind(lpFile);
-	//fwrite(&FileContent, sizeof(FileContent), 1, lpFile);
-	fwrite(FileContent.Password, sizeof(wchar_t), 20, lpFile);									//Password
-	fwrite(&(FileContent.ElementCount), sizeof(int), 4, lpFile);								//Element count
-	fwrite(FileContent.LogData.data(), sizeof(LogInfo), FileContent.ElementCount, lpFile);		//All log data
+	fwrite(Buffer, szFile, 1, lpFile);															//Write to the file
+
+	delete[] Buffer;																			//Deallocate binary content buffer
+	return true;
+}
+
+/*
+Description:    Read the file and decrypt the content with the password provided
+Args:			Password: The password to the file
+Return:			true if succeed, false otherwise
+*/
+bool IceEncryptedFile::ReadFile(wchar_t *Password) {
+	if (!lpFile)																				//Continued without log file
+		return false;
+
+	//Read file contents
+
+	fseek(lpFile, 0, SEEK_END);
+	int		szFile = ftell(lpFile);																//Get file size
+	rewind(lpFile);
+	BYTE	*Buffer = new BYTE[szFile];															//Allocate file reading buffer
+	int		KeyLen = lstrlenW(Password);														//Get password length
+
+	fread_s(Buffer, szFile, szFile, 1, lpFile);													//Read whole file
+	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ Password[i % KeyLen]));	 				//Decrypt binary data with the provided password
+	if (!lstrcmpW((LPWSTR)Buffer, Password)) {													//Check if the decrypted password matches with the provided password
+		MessageBox(GetMainWindowHandle(), L"Yes", L"", 0);
+	}
+	else {
+		MessageBox(GetMainWindowHandle(), L"No", L"", 0);
+	}
+
+	delete[] Buffer;																			//Deallocate buffer
 	return true;
 }

@@ -37,4 +37,5 @@ public:
 	IceEncryptedFile(wchar_t *FilePath);
 	bool AddLog(wchar_t *CarNumber, SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee);
 	bool SaveFile();
+	bool ReadFile(wchar_t *Password);
 };

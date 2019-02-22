@@ -22,17 +22,17 @@ void MainWindow_Create() {
 
 	//Load data file
 	IceEncryptedFile encFile(L"Log.dat");
-
+	encFile.ReadFile(L"I Like Emily");
 }
 
 /*
 Description:	To handle Exit menu event
 */
 void mnuExit_Click() {
-	if (MessageBox(GetMainWindowHandle(), L"Exit Parking System?", L"Confirm", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+	//if (MessageBox(GetMainWindowHandle(), L"Exit Parking System?", L"Confirm", MB_YESNO | MB_ICONQUESTION) == IDYES) {
 		DestroyWindow(GetMainWindowHandle());								//Close the window and exit the program
 		PostQuitMessage(0);
-	}
+	//}
 }
 
 /*
