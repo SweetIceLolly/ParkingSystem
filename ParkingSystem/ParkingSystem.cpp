@@ -8,6 +8,24 @@ File:           ParkingSystem.cpp
 #include "FileManager.h"
 
 /*
+Description:    To handle main window resizing event
+*/
+void MainWindow_Resize(WORD Width, WORD Height) {
+	HWND	PasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
+	if (IsWindowVisible(PasswordFrame)) {									//Center the password frame
+		RECT	rectFrame;
+		GetWindowRect(PasswordFrame, &rectFrame);
+		SetWindowPos(PasswordFrame,
+			0,
+			Width / 2 - (rectFrame.right - rectFrame.left) / 2,
+			Height / 2 - (rectFrame.bottom - rectFrame.top) / 2,
+			0,
+			0,
+			SWP_NOSIZE | SWP_NOREPOSITION);
+	}
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create() {
@@ -46,5 +64,5 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	//Create the main window and pass MainWindow_Create() to the lParam of its WM_INITDIALOG message
 	return DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAINWINDOW), NULL,
-		MainWindowProc, (LPARAM)((WindowCreateEvent)MainWindow_Create));
+		MainWindowProc, (LPARAM)MainWindow_Create);
 }

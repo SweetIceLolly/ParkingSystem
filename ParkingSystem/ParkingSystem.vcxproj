@@ -31,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="C:\Users\Administrator\Desktop\Park.ico" />
+    <Image Include="Park.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{320B9F46-CBF9-4638-9692-D0CB4A2468A3}</ProjectGuid>
@@ -100,4 +101,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="ParkingSystem.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

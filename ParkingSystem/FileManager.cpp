@@ -137,7 +137,6 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 		return false;
 
 	//Read file contents
-
 	fseek(lpFile, 0, SEEK_END);
 	int		szFile = ftell(lpFile);																//Get file size
 	rewind(lpFile);
@@ -147,11 +146,11 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 	fread_s(Buffer, szFile, szFile, 1, lpFile);													//Read whole file
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ Password[i % KeyLen]));	 				//Decrypt binary data with the provided password
 	if (!lstrcmpW((LPWSTR)Buffer, Password)) {													//Check if the decrypted password matches with the provided password
-		MessageBox(GetMainWindowHandle(), L"Yes", L"", 0);
+
+		return true;
 	}
-	else {
-		MessageBox(GetMainWindowHandle(), L"No", L"", 0);
-	}
+	else																						//Password unmatch
+		return false;
 
 	delete[] Buffer;																			//Deallocate buffer
 	return true;
