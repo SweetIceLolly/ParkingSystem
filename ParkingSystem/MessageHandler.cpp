@@ -56,6 +56,7 @@ Args:           ParentHwnd: The parent window of the button
 IceButton::IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event) {
 	ClickEventFunction = Event;
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
 	SetProp(hWnd, L"ClickEvent", (HANDLE)Event);
 }
 
@@ -65,6 +66,33 @@ Args:           Caption: New caption
 */
 void IceButton::SetCaption(wchar_t *Caption) {
 	SetWindowText(hWnd, Caption);
+}
+
+//============================================================================
+/*
+Description:    Constructor of the editbox control
+Args:           ParentHwnd: The parent window of the editbox
+				CtlID: Control ID, usually defined in resource.h
+*/
+IceEdit::IceEdit(HWND ParentHwnd, int CtlID) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
+}
+
+/*
+Description:    Set the caption of the button control
+Args:           Caption: New caption
+*/
+void IceEdit::SetText(wchar_t *Text) {
+	SetWindowText(hWnd, Text);
+}
+
+/*
+Description:    Set the caption of the button control
+Args:           Caption: New caption
+*/
+void IceEdit::GetText(wchar_t *Buffer) {
+	GetWindowText(hWnd, Buffer, 255);
 }
 
 //============================================================================
@@ -101,7 +129,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_INITDIALOG:															//Window created
 		hwndMainWindow = hWnd;														//Record the window handle
 		//Invoke MainWindow_Create()
-		((void(*)())lParam)();
+		((void(*)(HWND))lParam)(hWnd);
 		break;
 
 	case WM_COMMAND:															//Control commands
@@ -125,7 +153,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_SIZE:																//Window resizing
 		//Invoke Window_Resize()
-		MainWindow_Resize(LOWORD(lParam), HIWORD(lParam));
+		MainWindow_Resize(hWnd, LOWORD(lParam), HIWORD(lParam));
 		break;
 
 	case WM_CLOSE:																//Window closing

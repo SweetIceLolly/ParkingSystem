@@ -35,6 +35,7 @@ public:
 	RecordFile		FileContent;						//Record file content
 
 	IceEncryptedFile(wchar_t *FilePath);
+	~IceEncryptedFile();
 	bool AddLog(wchar_t *CarNumber, SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee);
 	bool SaveFile();
 	bool ReadFile(wchar_t *Password);

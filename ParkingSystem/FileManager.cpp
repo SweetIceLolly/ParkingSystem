@@ -42,12 +42,6 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 		}
 	}
 
-	SYSTEMTIME a = { 0 };
-	lstrcpyW(FileContent.Password, L"I Like Emily");
-	AddLog(L"123456s", (SYSTEMTIME)a, (SYSTEMTIME)a, 15, 48);
-	AddLog(L"1abcde", (SYSTEMTIME)a, (SYSTEMTIME)a, 385, 786);
-	AddLog(L"aefsad", (SYSTEMTIME)a, (SYSTEMTIME)a, 42, 345);
-
 	//Check file size
 	fseek(lpFile, 0, SEEK_END);
 	int		szFile = ftell(lpFile);																//Get file size
@@ -76,6 +70,14 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 			}
 		}
 	}
+}
+
+/*
+Description:    Destructor of encrypted file class
+*/
+IceEncryptedFile::~IceEncryptedFile() {
+	//Close log file
+	fclose(lpFile);
 }
 
 /*
@@ -116,12 +118,13 @@ bool IceEncryptedFile::SaveFile() {
 
 	memcpy(Buffer, FileContent.Password, sizeof(wchar_t) * 20);									//Password
 	memcpy(Buffer + sizeof(wchar_t) * 20, &(FileContent.ElementCount), sizeof(UINT));			//Element count
-	memcpy(Buffer + sizeof(wchar_t)* 20 + 4, FileContent.LogData.data(),
-		sizeof(LogInfo)* FileContent.ElementCount);												//All log data
+	memcpy(Buffer + sizeof(wchar_t) * 20 + 4, FileContent.LogData.data(),
+		sizeof(LogInfo) * FileContent.ElementCount);											//All log data
 	int KeyLen = lstrlenW(FileContent.Password);
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));		//Encrypt binary data
 	rewind(lpFile);
 	fwrite(Buffer, szFile, 1, lpFile);															//Write to the file
+	fflush(lpFile);
 
 	delete[] Buffer;																			//Deallocate binary content buffer
 	return true;
@@ -136,17 +139,25 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 	if (!lpFile)																				//Continued without log file
 		return false;
 
-	//Read file contents
+	int		KeyLen = lstrlenW(Password);														//Get password length
+	if (KeyLen <= 0)																			//Password not provided
+		return false;
+
+	//Get file size
 	fseek(lpFile, 0, SEEK_END);
-	int		szFile = ftell(lpFile);																//Get file size
+	int		szFile = ftell(lpFile);
 	rewind(lpFile);
 	BYTE	*Buffer = new BYTE[szFile];															//Allocate file reading buffer
-	int		KeyLen = lstrlenW(Password);														//Get password length
-
+	
+	//Read file contents
 	fread_s(Buffer, szFile, szFile, 1, lpFile);													//Read whole file
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ Password[i % KeyLen]));	 				//Decrypt binary data with the provided password
 	if (!lstrcmpW((LPWSTR)Buffer, Password)) {													//Check if the decrypted password matches with the provided password
-
+		memcpy(FileContent.Password, Buffer, sizeof(wchar_t) * 20);									//Password
+		memcpy(&(FileContent.ElementCount), Buffer + sizeof(wchar_t) * 20, sizeof(UINT));			//Element count
+		FileContent.LogData.resize(FileContent.ElementCount);										//Allocate LogData elements
+		memcpy(FileContent.LogData.data(), Buffer + sizeof(wchar_t) * 20 + 4,
+			sizeof(LogInfo)* FileContent.ElementCount);												//All log data
 		return true;
 	}
 	else																						//Password unmatch

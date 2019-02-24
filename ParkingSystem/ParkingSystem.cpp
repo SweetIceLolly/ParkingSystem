@@ -7,28 +7,51 @@ File:           ParkingSystem.cpp
 
 #include "FileManager.h"
 
+IceEncryptedFile	*LogFile;
+IceEdit				*edPassword;
+IceButton			*btnLogin;
+
 /*
 Description:    To handle main window resizing event
 */
-void MainWindow_Resize(WORD Width, WORD Height) {
-	HWND	PasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
-	if (IsWindowVisible(PasswordFrame)) {									//Center the password frame
-		RECT	rectFrame;
-		GetWindowRect(PasswordFrame, &rectFrame);
-		SetWindowPos(PasswordFrame,
-			0,
-			Width / 2 - (rectFrame.right - rectFrame.left) / 2,
-			Height / 2 - (rectFrame.bottom - rectFrame.top) / 2,
-			0,
-			0,
-			SWP_NOSIZE | SWP_NOREPOSITION);
+void MainWindow_Resize(HWND hWnd, WORD Width, WORD Height) {
+	
+}
+
+/*
+Description:	To handle login button event
+*/
+void btnLogin_Click() {
+	//Try to decrypt the file
+	wchar_t		Password[20];
+	static int	nTry = 2;								//Password attempted times
+	
+	edPassword->GetText(Password);
+	if (LogFile->ReadFile(Password)) {					//Password correct
+		//Change window style to sizable
+		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
+			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+	}
+	else {
+		if (nTry--)
+			MessageBox(GetMainWindowHandle(),
+				L"Incorrect password! Please try again...",
+				L"Incorrect Password",
+				MB_ICONEXCLAMATION);
+		else {
+			MessageBox(GetMainWindowHandle(),
+				L"Too many incorrect password attempts! Exiting...",
+				L"Incorrect Password",
+				MB_ICONEXCLAMATION);
+			mnuExit_Click();
+		}
 	}
 }
 
 /*
 Description:    To handle main window creation event
 */
-void MainWindow_Create() {
+void MainWindow_Create(HWND hWnd) {
 	//Set the icon of the window
 	HICON hIcon = (HICON)LoadImage(GetProgramInstance(),
 		MAKEINTRESOURCE(IDI_MAINICON),
@@ -36,21 +59,40 @@ void MainWindow_Create() {
 		GetSystemMetrics(SM_CXSMICON),
 		GetSystemMetrics(SM_CYSMICON), 0);
 	if (hIcon)
-		SendMessage(GetMainWindowHandle(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+
+	//Bind controls with message handlers
+	edPassword = new IceEdit(hWnd, IDC_PASSWORDEDIT);
+	btnLogin = new IceButton(hWnd, IDC_LOGIN, btnLogin_Click);
+
+	//Set password editbox max. length
+	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);
 
 	//Load data file
-	IceEncryptedFile encFile(L"Log.dat");
-	encFile.ReadFile(L"I Like Emily");
+	LogFile = new IceEncryptedFile(L"Log.dat");
+
+	//Set window focus to the password editbox
+	SetFocus(edPassword->hWnd);
 }
 
 /*
 Description:	To handle Exit menu event
 */
 void mnuExit_Click() {
-	//if (MessageBox(GetMainWindowHandle(), L"Exit Parking System?", L"Confirm", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-		DestroyWindow(GetMainWindowHandle());								//Close the window and exit the program
+	if (1)/*(MessageBox(GetMainWindowHandle(),
+		L"Exit Parking System?",
+		L"Confirm",
+		MB_YESNO | MB_ICONQUESTION) == IDYES)*/ {
+
+		//Release all control bindings
+		delete LogFile;
+		delete edPassword;
+		delete btnLogin;
+
+		//Close the window and exit the program
+		DestroyWindow(GetMainWindowHandle());
 		PostQuitMessage(0);
-	//}
+	}
 }
 
 /*

@@ -26,7 +26,7 @@ void mnuHowToUse_Click();
 void mnuAbout_Click();
 
 /* Main window events */
-void MainWindow_Resize(WORD, WORD);				//Window_Resize
+void MainWindow_Resize(HWND, WORD, WORD);		//Window_Resize
 
 /* Event types */
 typedef void(*ButtonClickEvent)();              //Button_Click
@@ -38,7 +38,8 @@ Description:		Basic control class
 */
 class BasicCtl {
 public:
-	HWND				hWnd;
+	HWND				hWnd;					//Control handle
+	RECT				CtlRect;				//non realtime-update
 
 	void SetVisible(bool Visible);
 	void SetEnabled(bool Enabled);
