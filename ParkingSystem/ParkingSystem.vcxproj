@@ -31,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="C:\Users\Administrator\Desktop\Park.ico" />
+    <Image Include="Keys.ico" />
     <Image Include="Park.ico" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -80,6 +81,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>ParkingSystem.exe.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

@@ -49,6 +49,9 @@
     <Image Include="C:\Users\Administrator\Desktop\Park.ico">
       <Filter>Resource</Filter>
     </Image>
+    <Image Include="Keys.ico">
+      <Filter>Resource</Filter>
+    </Image>
     <Image Include="Park.ico" />
   </ItemGroup>
 </Project>

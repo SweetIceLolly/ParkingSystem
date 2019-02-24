@@ -31,13 +31,32 @@ void btnLogin_Click() {
 		//Change window style to sizable
 		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
 			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+
+		//Hide password frame
+		btnLogin->SetVisible(false);
+		edPassword->SetVisible(false);
+		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
+		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDICON), SW_HIDE);
+		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDLABEL), SW_HIDE);
+
+		//Show the main menu and welcome text
+		HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
+		SetMenu(GetMainWindowHandle(), hMenu);
+		DestroyMenu(hMenu);
+
+		//Hide and show the window to apply new style
+		ShowWindow(GetMainWindowHandle(), SW_HIDE);
+		ShowWindow(GetMainWindowHandle(), SW_SHOW);
 	}
-	else {
-		if (nTry--)
+	else {												//Password incorrect
+		if (nTry--) {
 			MessageBox(GetMainWindowHandle(),
 				L"Incorrect password! Please try again...",
 				L"Incorrect Password",
 				MB_ICONEXCLAMATION);
+			SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);	//Select all text in the textbox
+			SetFocus(edPassword->hWnd);
+		}
 		else {
 			MessageBox(GetMainWindowHandle(),
 				L"Too many incorrect password attempts! Exiting...",
@@ -62,10 +81,10 @@ void MainWindow_Create(HWND hWnd) {
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 
 	//Bind controls with message handlers
-	edPassword = new IceEdit(hWnd, IDC_PASSWORDEDIT);
+	edPassword = new IceEdit(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
 	btnLogin = new IceButton(hWnd, IDC_LOGIN, btnLogin_Click);
 
-	//Set password editbox max. length
+	//Set max. length of password editbox
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);
 
 	//Load data file

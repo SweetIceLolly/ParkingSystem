@@ -13,12 +13,14 @@ HINSTANCE GetProgramInstance();															//This retrieves hInstance from Pr
 HWND GetMainWindowHandle();																//This retrieves main window handle
 INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    //Main window procedure
 LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);        //Button control procedure
+LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//Password editbox control procedure
 
 /* Main window menu events */
 void mnuLog_Click();
 void mnuReport_Click();
+void mnuLock_Click();
 void mnuExit_Click();
-void mnuEnterPatmentMode_Click();
+void mnuEnterPaymentMode_Click();
 void mnuStatus_Click();
 void mnuParkClosed_Click();
 void mnuOptions_Click();
@@ -27,6 +29,7 @@ void mnuAbout_Click();
 
 /* Main window events */
 void MainWindow_Resize(HWND, WORD, WORD);		//Window_Resize
+void btnLogin_Click();							//Login button click
 
 /* Event types */
 typedef void(*ButtonClickEvent)();              //Button_Click
@@ -62,7 +65,7 @@ public:
 /* Description:		Edit box class */
 class IceEdit : public BasicCtl{
 public:
-	IceEdit(HWND ParentHwnd, int CtlID);
+	IceEdit(HWND ParentHwnd, int CtlID, WNDPROC Proc);
 	void SetText(wchar_t *Text);
 	void GetText(wchar_t *Buffer);
 };

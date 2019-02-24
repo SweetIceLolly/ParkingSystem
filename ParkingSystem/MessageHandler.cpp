@@ -74,8 +74,9 @@ Description:    Constructor of the editbox control
 Args:           ParentHwnd: The parent window of the editbox
 				CtlID: Control ID, usually defined in resource.h
 */
-IceEdit::IceEdit(HWND ParentHwnd, int CtlID) {
+IceEdit::IceEdit(HWND ParentHwnd, int CtlID, WNDPROC Proc) {
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	SetProp(hWnd, L"PrevWndProc", (HANDLE)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)Proc));		//Store previous window procedure
 	GetWindowRect(hWnd, &CtlRect);
 }
 
@@ -146,6 +147,9 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				switch (LOWORD(wParam)) {													//Get menu ID
 				case ID_FILE_EXITSYSTEM:														//Exit System
 					mnuExit_Click();
+
+				case ID_FILE_PARKINGLOG:														//Show parking log
+					mnuLog_Click();
 				}
 			}
 		}
@@ -164,4 +168,19 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
     }
     return 0;
+}
+
+LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if (uMsg == WM_GETDLGCODE)													//Tell the system that this editbox wants all keys
+		//Referenced from: https://support.microsoft.com/en-us/help/102589/how-to-use-the-enter-key-from-edit-controls-in-a-dialog-box
+		return (DLGC_WANTALLKEYS |
+			CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam));
+
+	if (uMsg == WM_KEYDOWN) {													//Key down message
+		if (wParam == VK_RETURN)
+			btnLogin_Click();
+	}
+
+	//Call the default window prodecure of the editbpx
+	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
 }
