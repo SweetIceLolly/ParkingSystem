@@ -98,6 +98,79 @@ void IceEdit::GetText(wchar_t *Buffer) {
 
 //============================================================================
 /*
+Description:    Constructor of the listview control
+Args:           ParentHwnd: The parent window of the listview
+				CtlID: Control ID, usually defined in resource.h
+*/
+IceListView::IceListView(HWND ParentHwnd, int CtlID) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	SendMessage(hWnd, LVM_SETEXTENDEDLISTVIEWSTYLE,
+		LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);					//Add full-row select style for the listview
+	GetWindowRect(hWnd, &CtlRect);
+}
+
+/*
+Description:    Add a new column to the listview
+Args:           Text: The text of the new column
+				Width: The width of the new column. Default = 100
+				Index: The index of the new column. -1 means at the end of column headers. Default = -1
+Return:			Index to of the new column if successful, or -1 otherwise
+*/
+LRESULT IceListView::AddColumn(wchar_t *Text, int Width, int Index) {
+	LVCOLUMN	lvCol = { 0 };											//Listview column info
+
+	lvCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_FMT;						//Specific width, text and text alignment
+	lvCol.fmt = LVCFMT_LEFT;
+	lvCol.cchTextMax = lstrlenW(Text);
+	lvCol.pszText = Text;
+	lvCol.cx = Width;
+	if (Index == -1)													//Add the column header to the end
+		return SendMessage(hWnd, LVM_INSERTCOLUMN,
+			SendMessage(														//Get the total number of column headers
+				(HWND)SendMessage(hWnd, LVM_GETHEADER, 0, 0),						//Get the handle to the column header
+				HDM_GETITEMCOUNT, 0, 0),
+			(LPARAM)&lvCol);
+	else																//Add the column header to the specified index
+		return SendMessage(hWnd, LVM_INSERTCOLUMN, Index, (LPARAM)&lvCol);
+}
+
+/*
+Description:    Add a new list item to the listview
+Args:           Text: The text of the new item
+				Index: The index of the new column. -1 means at the end of the list. Default = -1
+Return:			Index to of the new item if successful, or -1 otherwise
+*/
+LRESULT IceListView::AddItem(wchar_t *Text, int Index) {
+	LVITEM		lvi = { 0 };											//Listview item info
+
+	if (Index == -1)													//Add the item to the end
+		lvi.iItem = SendMessage(hWnd, LVM_GETITEMCOUNT, 0, 0);
+	else																//Add the item to the specified index
+		lvi.iItem = Index;
+	lvi.mask = LVIF_TEXT;												//Specific text
+	lvi.cchTextMax = lstrlenW(Text);
+	lvi.pszText = Text;
+	return SendMessage(hWnd, LVM_INSERTITEM, 0, (LPARAM)&lvi);
+}
+
+/*
+Description:    Set the text of an existing item
+Args:           Index: The index of the item
+				SubItemIndex: The index of the subitem of the specified item. 0 means the main item. Default = 0
+Return:			TRUE if successful, or FALSE otherwise
+*/
+LRESULT IceListView::SetItemText(int Index, wchar_t *Text, int SubItemIndex = 0) {
+	LVITEM		lvi;													//Listview item info
+
+	lvi.iSubItem = SubItemIndex;
+	lvi.mask = LVIF_TEXT;												//Specific text
+	lvi.cchTextMax = lstrlenW(Text);
+	lvi.pszText = Text;
+	return SendMessage(hWnd, LVM_SETITEMTEXT, Index, (LPARAM)&lvi);
+}
+
+//============================================================================
+/*
 Description:    This copys hInstance to ProgramInstance
 Args:           hInstance: Program hInstance
 */
@@ -147,9 +220,11 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				switch (LOWORD(wParam)) {													//Get menu ID
 				case ID_FILE_EXITSYSTEM:														//Exit System
 					mnuExit_Click();
+					break;
 
 				case ID_FILE_PARKINGLOG:														//Show parking log
 					mnuLog_Click();
+					break;
 				}
 			}
 		}
@@ -167,7 +242,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	default:
 		return 0;
     }
-    return 0;
+	return 0;
 }
 
 LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {

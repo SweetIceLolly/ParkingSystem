@@ -6,6 +6,7 @@ File:           MessageHandler.h
 */
 
 #include <Windows.h>
+#include <CommCtrl.h>
 #include "resource.h"
 
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
@@ -68,4 +69,13 @@ public:
 	IceEdit(HWND ParentHwnd, int CtlID, WNDPROC Proc);
 	void SetText(wchar_t *Text);
 	void GetText(wchar_t *Buffer);
+};
+
+/* Description:		Listview class */
+class IceListView : public BasicCtl {
+public:
+	IceListView(HWND ParentHwnd, int CtlID);
+	LRESULT AddColumn(wchar_t *Text, int Width = 100, int Index = -1);
+	LRESULT AddItem(wchar_t *Text, int Index = -1);
+	LRESULT SetItemText(int Index, wchar_t *Text, int SubItemIndex);
 };

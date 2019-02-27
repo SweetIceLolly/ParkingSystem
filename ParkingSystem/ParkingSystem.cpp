@@ -10,12 +10,13 @@ File:           ParkingSystem.cpp
 IceEncryptedFile	*LogFile;
 IceEdit				*edPassword;
 IceButton			*btnLogin;
+IceListView			*lvLog;
 
 /*
 Description:    To handle main window resizing event
 */
 void MainWindow_Resize(HWND hWnd, WORD Width, WORD Height) {
-	
+	lvLog->Size(Width, Height);
 }
 
 /*
@@ -24,10 +25,10 @@ Description:	To handle login button event
 void btnLogin_Click() {
 	//Try to decrypt the file
 	wchar_t		Password[20];
-	static int	nTry = 2;								//Password attempted times
+	static int	nTry = 2;													//Password attempted times
 	
 	edPassword->GetText(Password);
-	if (LogFile->ReadFile(Password)) {					//Password correct
+	if (LogFile->ReadFile(Password)) {										//Password correct
 		//Change window style to sizable
 		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
 			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
@@ -48,13 +49,13 @@ void btnLogin_Click() {
 		ShowWindow(GetMainWindowHandle(), SW_HIDE);
 		ShowWindow(GetMainWindowHandle(), SW_SHOW);
 	}
-	else {												//Password incorrect
+	else {																	//Password incorrect
 		if (nTry--) {
 			MessageBox(GetMainWindowHandle(),
 				L"Incorrect password! Please try again...",
 				L"Incorrect Password",
 				MB_ICONEXCLAMATION);
-			SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);	//Select all text in the textbox
+			SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
 			SetFocus(edPassword->hWnd);
 		}
 		else {
@@ -80,12 +81,19 @@ void MainWindow_Create(HWND hWnd) {
 	if (hIcon)
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 
-	//Bind controls with message handlers
+	//Bind controls with their corresponding classes
 	edPassword = new IceEdit(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
 	btnLogin = new IceButton(hWnd, IDC_LOGIN, btnLogin_Click);
+	lvLog = new IceListView(hWnd, IDC_LISTVIEW_LOG);
 
-	//Set max. length of password editbox
-	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);
+	//Set control properties
+	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
+	lvLog->AddColumn(L"#", 50);												//Add columns to the log listview
+	lvLog->AddColumn(L"Car Number", 120);
+	lvLog->AddColumn(L"Enter Time (YYYY/MM/DD HH:MM:SS)", 100);
+	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 100);
+	lvLog->AddColumn(L"Position", 80);
+	lvLog->AddColumn(L"Fee", 50);
 
 	//Load data file
 	LogFile = new IceEncryptedFile(L"Log.dat");
@@ -111,6 +119,20 @@ void mnuExit_Click() {
 		//Close the window and exit the program
 		DestroyWindow(GetMainWindowHandle());
 		PostQuitMessage(0);
+	}
+}
+
+/*
+Description:	To handle Show Log menu event
+*/
+void mnuLog_Click() {
+	wchar_t buffer[20];
+
+	lvLog->SetVisible(true);												//Show log listview
+	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {			//Add all log info to the listview
+		//Index
+		_itow_s(i, buffer, 10);
+		lvLog->AddItem(buffer);
 	}
 }
 
