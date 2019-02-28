@@ -33,6 +33,7 @@ private:
 public:
 	FILE			*lpFile;							//File handle
 	RecordFile		FileContent;						//Record file content
+	bool			WithoutFile = false;				//If the user selected continue without log file
 
 	IceEncryptedFile(wchar_t *FilePath);
 	~IceEncryptedFile();

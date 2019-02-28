@@ -88,10 +88,10 @@ void MainWindow_Create(HWND hWnd) {
 
 	//Set control properties
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
-	lvLog->AddColumn(L"#", 50);												//Add columns to the log listview
+	lvLog->AddColumn(L"#", 40);												//Add columns to the log listview
 	lvLog->AddColumn(L"Car Number", 120);
-	lvLog->AddColumn(L"Enter Time (YYYY/MM/DD HH:MM:SS)", 100);
-	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 100);
+	lvLog->AddColumn(L"Enter Time (YYYY-MM-DD HH:MM:SS)", 145);
+	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Position", 80);
 	lvLog->AddColumn(L"Fee", 50);
 
@@ -131,8 +131,39 @@ void mnuLog_Click() {
 	lvLog->SetVisible(true);												//Show log listview
 	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {			//Add all log info to the listview
 		//Index
-		_itow_s(i, buffer, 10);
+		_itow_s(i + 1, buffer, 10);													
 		lvLog->AddItem(buffer);
+
+		//Car number
+		lvLog->SetItemText(i, LogFile->FileContent.LogData[i].CarNumber, 1);
+
+		//Enter time
+		wsprintf(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+			LogFile->FileContent.LogData[i].EnterTime.wYear,
+			LogFile->FileContent.LogData[i].EnterTime.wMonth,
+			LogFile->FileContent.LogData[i].EnterTime.wDay,
+			LogFile->FileContent.LogData[i].EnterTime.wHour,
+			LogFile->FileContent.LogData[i].EnterTime.wMinute,
+			LogFile->FileContent.LogData[i].EnterTime.wSecond);
+		lvLog->SetItemText(i, buffer, 2);
+
+		//Leave time
+		wsprintf(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+			LogFile->FileContent.LogData[i].LeaveTime.wYear,
+			LogFile->FileContent.LogData[i].LeaveTime.wMonth,
+			LogFile->FileContent.LogData[i].LeaveTime.wDay,
+			LogFile->FileContent.LogData[i].LeaveTime.wHour,
+			LogFile->FileContent.LogData[i].LeaveTime.wMinute,
+			LogFile->FileContent.LogData[i].LeaveTime.wSecond);
+		lvLog->SetItemText(i, buffer, 3);
+
+		//Car position
+		_itow_s(LogFile->FileContent.LogData[i].CarPos, buffer, 10);
+		lvLog->SetItemText(i, buffer, 4);
+
+		//Fee
+		wsprintf(buffer, L"$%u", LogFile->FileContent.LogData[i].Fee);
+		lvLog->SetItemText(i, buffer, 5);
 	}
 }
 

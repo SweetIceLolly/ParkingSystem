@@ -14,6 +14,7 @@ Args:			FilePath: Log file path
 */
 IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 	//Open log file
+	lstrcpyW(FileContent.Password, L"123");													//Set the default password
 	_wfopen_s(&lpFile, FilePath, L"r+");
 	if (!lpFile) {
 		_wfopen_s(&lpFile, FilePath, L"w+");													//Create log file if it doesn't exist
@@ -27,7 +28,9 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 				PostQuitMessage(0);
 				return;
 			}
-			
+			else																				//Continuing without log file
+				WithoutFile = true;
+
 			if (!SaveFile()) {																	//Initalize the file content
 				if (MessageBox(GetMainWindowHandle(),
 					L"Failed to initalize the log file content! Please make sure the file is writable! Continue without log file?",
@@ -37,6 +40,8 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 					DestroyWindow(GetMainWindowHandle());												//Quit the system
 					PostQuitMessage(0);
 				}
+				else																				//Continuing without log file
+					WithoutFile = true;
 				return;
 			}
 		}
@@ -46,13 +51,14 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 	fseek(lpFile, 0, SEEK_END);
 	int		szFile = ftell(lpFile);																//Get file size
 	rewind(lpFile);
-	if (szFile < sizeof(FileContent)) {															//Invalid file size
+	if (szFile < sizeof(FileContent) - sizeof(wchar_t) * 20) {									//Invalid file size
 		if (MessageBox(GetMainWindowHandle(),
 			L"Invalid file content! Create a new file to replace current file?",
 			L"Error",
 			MB_ICONERROR | MB_YESNO) == IDNO) {
 
 			fclose(lpFile);																			//Don't create a new file
+			WithoutFile = true;																		//Continuing without log file
 			MessageBox(GetMainWindowHandle(),
 				L"Continuing without log file!",
 				L"Invalid File Content",
@@ -62,6 +68,7 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 		else {																					//Create a new file
 			if (!SaveFile()) {																		//Failed to create a new file
 				fclose(lpFile);
+				WithoutFile = true;																		//Continuing without log file
 				MessageBox(GetMainWindowHandle(),
 					L"Failed to create a new file! Continuing without log file!",
 					L"Invalid File Content",
@@ -90,7 +97,7 @@ Args:			CarNumber: Car number
 Return:			true if succeed, false otherwise
 */
 bool IceEncryptedFile::AddLog(wchar_t CarNumber[10], SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee) {
-	if (!lpFile)																				//Continued without log file
+	if (!lpFile || WithoutFile)																	//No file opened
 		return false;
 
 	LogInfo	info;																				//Set the content
@@ -110,7 +117,7 @@ Description:    Save the file content
 Return:			true if succeed, false otherwise
 */
 bool IceEncryptedFile::SaveFile() {
-	if (!lpFile)																				//Continued without log file
+	if (!lpFile || WithoutFile)																	//No file opened
 		return false;
 	
 	int		szFile = sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(LogInfo) * FileContent.ElementCount;
@@ -121,6 +128,8 @@ bool IceEncryptedFile::SaveFile() {
 	memcpy(Buffer + sizeof(wchar_t) * 20 + 4, FileContent.LogData.data(),
 		sizeof(LogInfo) * FileContent.ElementCount);											//All log data
 	int KeyLen = lstrlenW(FileContent.Password);
+	if (KeyLen <= 0)																			//Check password length
+		return false;
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));		//Encrypt binary data
 	rewind(lpFile);
 	fwrite(Buffer, szFile, 1, lpFile);															//Write to the file
@@ -136,7 +145,7 @@ Args:			Password: The password to the file
 Return:			true if succeed, false otherwise
 */
 bool IceEncryptedFile::ReadFile(wchar_t *Password) {
-	if (!lpFile)																				//Continued without log file
+	if (!lpFile || WithoutFile)																	//No file opened
 		return false;
 
 	int		KeyLen = lstrlenW(Password);														//Get password length
