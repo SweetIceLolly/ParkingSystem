@@ -53,9 +53,6 @@ public:
 
 /* Description:		Button control class */
 class IceButton : public BasicCtl {
-private:
-    char                *Caption;				//Button caption
-
 public:
 	ButtonClickEvent    ClickEventFunction;		//Button_Click() function
 	

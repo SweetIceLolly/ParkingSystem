@@ -218,12 +218,16 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		else {
 			if (HIWORD(wParam) == 0) {													//Notification from a menu
 				switch (LOWORD(wParam)) {													//Get menu ID
+				case ID_FILE_PARKINGLOG:														//Show parking log
+					mnuLog_Click();
+					break; 
+				
 				case ID_FILE_EXITSYSTEM:														//Exit System
 					mnuExit_Click();
 					break;
 
-				case ID_FILE_PARKINGLOG:														//Show parking log
-					mnuLog_Click();
+				case ID_STATUS_OPTIONS:															//System options
+					mnuOptions_Click();
 					break;
 				}
 			}

@@ -28,7 +28,7 @@ void btnLogin_Click() {
 	static int	nTry = 2;													//Password attempted times
 	
 	edPassword->GetText(Password);
-	if (LogFile->ReadFile(Password)) {										//Password correct
+	if (LogFile->ReadFile(Password) || LogFile->WithoutFile) {				//Password correct
 		//Change window style to sizable
 		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
 			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
@@ -165,6 +165,13 @@ void mnuLog_Click() {
 		wsprintf(buffer, L"$%u", LogFile->FileContent.LogData[i].Fee);
 		lvLog->SetItemText(i, buffer, 5);
 	}
+}
+
+/*
+Description:	To handle Options menu event
+*/
+void mnuOptions_Click() {
+
 }
 
 /*

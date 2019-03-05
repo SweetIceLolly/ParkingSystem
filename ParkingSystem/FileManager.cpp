@@ -49,7 +49,7 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 
 	//Check file size
 	fseek(lpFile, 0, SEEK_END);
-	int		szFile = ftell(lpFile);																//Get file size
+	long	szFile = ftell(lpFile);																//Get file size
 	rewind(lpFile);
 	if (szFile < sizeof(FileContent) - sizeof(wchar_t) * 20) {									//Invalid file size
 		if (MessageBox(GetMainWindowHandle(),
@@ -154,7 +154,10 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 
 	//Get file size
 	fseek(lpFile, 0, SEEK_END);
-	int		szFile = ftell(lpFile);
+	long	szFile = ftell(lpFile);
+	if (szFile == -1) {																			//Failed to get file size
+		return false;
+	}
 	rewind(lpFile);
 	BYTE	*Buffer = new BYTE[szFile];															//Allocate file reading buffer
 	
@@ -167,11 +170,11 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 		FileContent.LogData.resize(FileContent.ElementCount);										//Allocate LogData elements
 		memcpy(FileContent.LogData.data(), Buffer + sizeof(wchar_t) * 20 + 4,
 			sizeof(LogInfo)* FileContent.ElementCount);												//All log data
+		delete[] Buffer;																			//Deallocate buffer
 		return true;
 	}
-	else																						//Password unmatch
+	else {																						//Password unmatch
+		delete[] Buffer;																			//Deallocate buffer
 		return false;
-
-	delete[] Buffer;																			//Deallocate buffer
-	return true;
+	}
 }
