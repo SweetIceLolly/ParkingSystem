@@ -15,10 +15,11 @@ Args:			FilePath: Log file path
 IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 	//Open log file
 	lstrcpyW(FileContent.Password, L"123");													//Set the default password
-	_wfopen_s(&lpFile, FilePath, L"r+");
-	if (!lpFile) {
-		_wfopen_s(&lpFile, FilePath, L"w+");													//Create log file if it doesn't exist
-		if (!lpFile) {																			//Path not accessible
+	fsFile.open(FilePath, ios::binary | ios::in | ios::out);
+	if (fsFile.fail()) {
+		fsFile.open(FilePath, ios::binary | ios::out);											//Create log file if it doesn't exist
+		if (fsFile.fail()) {																		//Path not accessible
+			fsFile.close();
 			if (MessageBox(GetMainWindowHandle(),
 				L"Failed to access log file! Continue without log file?",
 				L"Error",
@@ -26,38 +27,38 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 
 				DestroyWindow(GetMainWindowHandle());												//Quit the system
 				PostQuitMessage(0);
-				return;
 			}
 			else																				//Continuing without log file
 				WithoutFile = true;
+			return;
+		}
+		if (!SaveFile()) {																	//Initalize the file content
+			fsFile.close();
+			if (MessageBox(GetMainWindowHandle(),
+				L"Failed to initalize the log file content! Please make sure the file is writable! Continue without log file?",
+				L"Error",
+				MB_ICONERROR | MB_YESNO) == IDNO) {
 
-			if (!SaveFile()) {																	//Initalize the file content
-				if (MessageBox(GetMainWindowHandle(),
-					L"Failed to initalize the log file content! Please make sure the file is writable! Continue without log file?",
-					L"Error",
-					MB_ICONERROR | MB_YESNO) == IDNO) {
-
-					DestroyWindow(GetMainWindowHandle());												//Quit the system
-					PostQuitMessage(0);
-				}
-				else																				//Continuing without log file
-					WithoutFile = true;
-				return;
+				DestroyWindow(GetMainWindowHandle());												//Quit the system
+				PostQuitMessage(0);
 			}
+			else																				//Continuing without log file
+				WithoutFile = true;
 		}
 	}
 
 	//Check file size
-	fseek(lpFile, 0, SEEK_END);
-	long	szFile = ftell(lpFile);																//Get file size
-	rewind(lpFile);
+	fsFile.seekg(0, ios::end);
+	long	szFile = fsFile.tellg();															//Get file size
+	fsFile.clear();
+	fsFile.seekg(0);
 	if (szFile < sizeof(FileContent) - sizeof(wchar_t) * 20) {									//Invalid file size
 		if (MessageBox(GetMainWindowHandle(),
 			L"Invalid file content! Create a new file to replace current file?",
 			L"Error",
 			MB_ICONERROR | MB_YESNO) == IDNO) {
 
-			fclose(lpFile);																			//Don't create a new file
+			fsFile.close();																			//Don't create a new file
 			WithoutFile = true;																		//Continuing without log file
 			MessageBox(GetMainWindowHandle(),
 				L"Continuing without log file!",
@@ -67,7 +68,7 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 		}
 		else {																					//Create a new file
 			if (!SaveFile()) {																		//Failed to create a new file
-				fclose(lpFile);
+				fsFile.close();
 				WithoutFile = true;																		//Continuing without log file
 				MessageBox(GetMainWindowHandle(),
 					L"Failed to create a new file! Continuing without log file!",
@@ -84,7 +85,7 @@ Description:    Destructor of encrypted file class
 */
 IceEncryptedFile::~IceEncryptedFile() {
 	//Close log file
-	fclose(lpFile);
+	fsFile.close();
 }
 
 /*
@@ -97,7 +98,7 @@ Args:			CarNumber: Car number
 Return:			true if succeed, false otherwise
 */
 bool IceEncryptedFile::AddLog(wchar_t CarNumber[10], SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee) {
-	if (!lpFile || WithoutFile)																	//No file opened
+	if (fsFile.fail() || WithoutFile)															//No file opened
 		return false;
 
 	LogInfo	info;																				//Set the content
@@ -117,7 +118,7 @@ Description:    Save the file content
 Return:			true if succeed, false otherwise
 */
 bool IceEncryptedFile::SaveFile() {
-	if (!lpFile || WithoutFile)																	//No file opened
+	if (fsFile.fail() || WithoutFile)															//No file opened
 		return false;
 	
 	int		szFile = sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(LogInfo) * FileContent.ElementCount;
@@ -131,9 +132,9 @@ bool IceEncryptedFile::SaveFile() {
 	if (KeyLen <= 0)																			//Check password length
 		return false;
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));		//Encrypt binary data
-	rewind(lpFile);
-	fwrite(Buffer, szFile, 1, lpFile);															//Write to the file
-	fflush(lpFile);
+	fsFile.seekg(0);
+	fsFile.write((char*)Buffer, szFile);														//Write to the file
+	fsFile.flush();																				//Update the content of the file
 
 	delete[] Buffer;																			//Deallocate binary content buffer
 	return true;
@@ -145,7 +146,7 @@ Args:			Password: The password to the file
 Return:			true if succeed, false otherwise
 */
 bool IceEncryptedFile::ReadFile(wchar_t *Password) {
-	if (!lpFile || WithoutFile)																	//No file opened
+	if (fsFile.fail() || WithoutFile)															//No file opened
 		return false;
 
 	int		KeyLen = lstrlenW(Password);														//Get password length
@@ -153,16 +154,16 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 		return false;
 
 	//Get file size
-	fseek(lpFile, 0, SEEK_END);
-	long	szFile = ftell(lpFile);
+	fsFile.seekg(0, ios::end);
+	long	szFile = fsFile.tellg();
 	if (szFile == -1) {																			//Failed to get file size
 		return false;
 	}
-	rewind(lpFile);
+	fsFile.seekg(0);
 	BYTE	*Buffer = new BYTE[szFile];															//Allocate file reading buffer
 	
 	//Read file contents
-	fread_s(Buffer, szFile, szFile, 1, lpFile);													//Read whole file
+	fsFile.read((char*)Buffer, szFile);															//Read whole file
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ Password[i % KeyLen]));	 				//Decrypt binary data with the provided password
 	if (!lstrcmpW((LPWSTR)Buffer, Password)) {													//Check if the decrypted password matches with the provided password
 		memcpy(FileContent.Password, Buffer, sizeof(wchar_t) * 20);									//Password

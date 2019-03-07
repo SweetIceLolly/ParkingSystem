@@ -6,7 +6,7 @@ File:           FileManager.h
 */
 
 #include "MessageHandler.h"
-#include <stdio.h>
+#include <fstream>
 #include <vector>
 
 using namespace std;
@@ -31,7 +31,7 @@ private:
 	};
 
 public:
-	FILE			*lpFile;							//File handle
+	fstream			fsFile;							//File input/output stream
 	RecordFile		FileContent;						//Record file content
 	bool			WithoutFile = false;				//If the user selected continue without log file
 
