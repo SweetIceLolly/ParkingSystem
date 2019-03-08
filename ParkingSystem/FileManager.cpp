@@ -6,7 +6,6 @@ File:           FileManager.cpp
 */
 
 #include "FileManager.h"
-#include <string.h>
 
 /*
 Description:    Constructor of encrypted file class
@@ -49,7 +48,7 @@ IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
 
 	//Check file size
 	fsFile.seekg(0, ios::end);
-	long	szFile = fsFile.tellg();															//Get file size
+	streamoff	szFile = fsFile.tellg();														//Get file size
 	fsFile.clear();
 	fsFile.seekg(0);
 	if (szFile < sizeof(FileContent) - sizeof(wchar_t) * 20) {									//Invalid file size
@@ -122,21 +121,20 @@ bool IceEncryptedFile::SaveFile() {
 		return false;
 	
 	int		szFile = sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(LogInfo) * FileContent.ElementCount;
-	BYTE	*Buffer = new BYTE[szFile];															//Allocate binary content buffer
+	unique_ptr<BYTE[]> Buffer(new BYTE[szFile]);												//Allocate binary content buffer
 
-	memcpy(Buffer, FileContent.Password, sizeof(wchar_t) * 20);									//Password
-	memcpy(Buffer + sizeof(wchar_t) * 20, &(FileContent.ElementCount), sizeof(UINT));			//Element count
-	memcpy(Buffer + sizeof(wchar_t) * 20 + 4, FileContent.LogData.data(),
+	memcpy(Buffer.get(), FileContent.Password, sizeof(wchar_t) * 20);							//Password
+	memcpy(Buffer.get() + sizeof(wchar_t)* 20, &(FileContent.ElementCount), sizeof(UINT));		//Element count
+	memcpy(Buffer.get() + sizeof(wchar_t)* 20 + 4, FileContent.LogData.data(),
 		sizeof(LogInfo) * FileContent.ElementCount);											//All log data
 	int KeyLen = lstrlenW(FileContent.Password);
 	if (KeyLen <= 0)																			//Check password length
 		return false;
 	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));		//Encrypt binary data
 	fsFile.seekg(0);
-	fsFile.write((char*)Buffer, szFile);														//Write to the file
+	fsFile.write((char*)Buffer.get(), szFile);													//Write to the file
 	fsFile.flush();																				//Update the content of the file
 
-	delete[] Buffer;																			//Deallocate binary content buffer
 	return true;
 }
 
@@ -155,27 +153,25 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 
 	//Get file size
 	fsFile.seekg(0, ios::end);
-	long	szFile = fsFile.tellg();
+	streamoff	szFile = fsFile.tellg();														//Get file size
 	if (szFile == -1) {																			//Failed to get file size
 		return false;
 	}
 	fsFile.seekg(0);
-	BYTE	*Buffer = new BYTE[szFile];															//Allocate file reading buffer
-	
+	unique_ptr<BYTE[]> Buffer(new BYTE[(int)szFile]);											//Smart pointer to the buffer
+
 	//Read file contents
-	fsFile.read((char*)Buffer, szFile);															//Read whole file
-	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ Password[i % KeyLen]));	 				//Decrypt binary data with the provided password
-	if (!lstrcmpW((LPWSTR)Buffer, Password)) {													//Check if the decrypted password matches with the provided password
-		memcpy(FileContent.Password, Buffer, sizeof(wchar_t) * 20);									//Password
-		memcpy(&(FileContent.ElementCount), Buffer + sizeof(wchar_t) * 20, sizeof(UINT));			//Element count
+	fsFile.read((char*)(Buffer.get()), szFile);													//Read whole file
+	for (int i = 0; i < szFile; Buffer.get()[i++] ^= (487 ^ Password[i % KeyLen]));	 			//Decrypt binary data with the provided password
+	if (!lstrcmpW((LPWSTR)Buffer.get(), Password)) {											//Check if the decrypted password matches with the provided password
+		memcpy(FileContent.Password, Buffer.get(), sizeof(wchar_t) * 20);							//Password
+		memcpy(&(FileContent.ElementCount), Buffer.get() + sizeof(wchar_t) * 20, sizeof(UINT));		//Element count
 		FileContent.LogData.resize(FileContent.ElementCount);										//Allocate LogData elements
-		memcpy(FileContent.LogData.data(), Buffer + sizeof(wchar_t) * 20 + 4,
+		memcpy(FileContent.LogData.data(), Buffer.get() + sizeof(wchar_t) * 20 + 4,
 			sizeof(LogInfo)* FileContent.ElementCount);												//All log data
-		delete[] Buffer;																			//Deallocate buffer
 		return true;
 	}
 	else {																						//Password unmatch
-		delete[] Buffer;																			//Deallocate buffer
 		return false;
 	}
 }

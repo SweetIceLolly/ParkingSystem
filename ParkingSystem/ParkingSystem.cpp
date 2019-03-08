@@ -85,7 +85,7 @@ void MainWindow_Create(HWND hWnd) {
 	edPassword = new IceEdit(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
 	btnLogin = new IceButton(hWnd, IDC_LOGIN, btnLogin_Click);
 	lvLog = new IceListView(hWnd, IDC_LISTVIEW_LOG);
-
+	
 	//Set control properties
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
 	lvLog->AddColumn(L"#", 40);												//Add columns to the log listview

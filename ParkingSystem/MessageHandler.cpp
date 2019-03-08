@@ -255,11 +255,13 @@ LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		return (DLGC_WANTALLKEYS |
 			CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam));
 
-	if (uMsg == WM_KEYDOWN) {													//Key down message
-		if (wParam == VK_RETURN)
+	if (uMsg == WM_CHAR) {														//Key pressed message
+		if (wParam == VK_RETURN) {
 			btnLogin_Click();
+			return 0;
+		}
 	}
-
+	
 	//Call the default window prodecure of the editbpx
 	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
 }
