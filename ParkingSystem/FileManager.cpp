@@ -11,7 +11,7 @@ File:           FileManager.cpp
 Description:    Constructor of encrypted file class
 Args:			FilePath: Log file path
 */
-IceEncryptedFile::IceEncryptedFile(wchar_t *FilePath) {
+IceEncryptedFile::IceEncryptedFile(const wchar_t *FilePath) {
 	//Open log file
 	lstrcpyW(FileContent.Password, L"123");													//Set the default password
 	fsFile.open(FilePath, ios::binary | ios::in | ios::out);

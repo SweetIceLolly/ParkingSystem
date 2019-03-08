@@ -1,2 +1,6 @@
-﻿  MessageHandler.cpp
+﻿  SettingsWindow.cpp
+  ParkingSystem.cpp
+  MessageHandler.cpp
+  FileManager.cpp
+  Generating Code...
   ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe

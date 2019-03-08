@@ -7,10 +7,10 @@ File:           ParkingSystem.cpp
 
 #include "FileManager.h"
 
-IceEncryptedFile	*LogFile;
-IceEdit				*edPassword;
-IceButton			*btnLogin;
-IceListView			*lvLog;
+shared_ptr<IceEncryptedFile>	LogFile;
+shared_ptr<IceEdit>				edPassword;
+shared_ptr<IceButton>			btnLogin;
+shared_ptr<IceListView>			lvLog;
 
 /*
 Description:    To handle main window resizing event
@@ -82,9 +82,9 @@ void MainWindow_Create(HWND hWnd) {
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 
 	//Bind controls with their corresponding classes
-	edPassword = new IceEdit(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
-	btnLogin = new IceButton(hWnd, IDC_LOGIN, btnLogin_Click);
-	lvLog = new IceListView(hWnd, IDC_LISTVIEW_LOG);
+	edPassword = make_shared<IceEdit>(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
+	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
+	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
 	
 	//Set control properties
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
@@ -96,7 +96,7 @@ void MainWindow_Create(HWND hWnd) {
 	lvLog->AddColumn(L"Fee", 50);
 
 	//Load data file
-	LogFile = new IceEncryptedFile(L"Log.dat");
+	LogFile = make_shared<IceEncryptedFile>(L"Log.dat");
 
 	//Set window focus to the password editbox
 	SetFocus(edPassword->hWnd);
@@ -110,11 +110,6 @@ void mnuExit_Click() {
 		L"Exit Parking System?",
 		L"Confirm",
 		MB_YESNO | MB_ICONQUESTION) == IDYES)*/ {
-
-		//Release all control bindings
-		delete LogFile;
-		delete edPassword;
-		delete btnLogin;
 
 		//Close the window and exit the program
 		DestroyWindow(GetMainWindowHandle());

@@ -36,7 +36,7 @@ public:
 	RecordFile		FileContent;						//Record file content
 	bool			WithoutFile = false;				//If the user selected continue without log file
 
-	IceEncryptedFile(wchar_t *FilePath);
+	IceEncryptedFile(const wchar_t *FilePath);
 	~IceEncryptedFile();
 	bool AddLog(wchar_t *CarNumber, SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee);
 	bool SaveFile();
