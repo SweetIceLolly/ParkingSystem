@@ -7,15 +7,19 @@ File:           ParkingSystem.cpp
 
 #include "FileManager.h"
 
+/* Control bindings */
 shared_ptr<IceEncryptedFile>	LogFile;
 shared_ptr<IceEdit>				edPassword;
 shared_ptr<IceButton>			btnLogin;
 shared_ptr<IceListView>			lvLog;
+shared_ptr<IceLabel>			labPasswordIcon;
+shared_ptr<IceLabel>			labPassword;
+shared_ptr<IceLabel>			labWelcome;
 
 /*
 Description:    To handle main window resizing event
 */
-void MainWindow_Resize(HWND hWnd, WORD Width, WORD Height) {
+void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 	lvLog->Size(Width, Height);
 }
 
@@ -36,9 +40,9 @@ void btnLogin_Click() {
 		//Hide password frame
 		btnLogin->SetVisible(false);
 		edPassword->SetVisible(false);
+		labPasswordIcon->SetVisible(false);
+		labPassword->SetVisible(false);
 		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
-		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDICON), SW_HIDE);
-		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDLABEL), SW_HIDE);
 
 		//Show the main menu and welcome text
 		HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
@@ -85,6 +89,12 @@ void MainWindow_Create(HWND hWnd) {
 	edPassword = make_shared<IceEdit>(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
+	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
+	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
+	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
+
+	labWelcome->SetFont(72, false);
+	labWelcome->AutoResize();
 	
 	//Set control properties
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox

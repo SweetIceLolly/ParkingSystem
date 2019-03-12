@@ -34,7 +34,7 @@ void BasicCtl::SetEnabled(bool Enabled) {
 Description:    Set the position of the control
 Args:           X, Y: The position of the control
 */
-void BasicCtl::Move(WORD X, WORD Y) {
+void BasicCtl::Move(int X, int Y) {
 	SetWindowPos(hWnd, 0, X, Y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 }
 
@@ -42,8 +42,65 @@ void BasicCtl::Move(WORD X, WORD Y) {
 Description:    Set the enabled status of the control
 Args:           Width, Height: The new size of the control
 */
-void BasicCtl::Size(WORD Width, WORD Height) {
+void BasicCtl::Size(int Width, int Height) {
 	SetWindowPos(hWnd, 0, 0, 0, Width, Height, SWP_NOZORDER | SWP_NOREPOSITION);
+}
+
+//============================================================================
+/*
+Description:    Constructor of the label control
+Args:           ParentHwnd: The parent window of the label
+				CtlID: Control ID, usually defined in resource.h
+*/
+IceLabel::IceLabel(HWND ParentHwnd, int CtlID) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
+}
+
+/*
+Description:    Destructor of the label control
+*/
+IceLabel::~IceLabel() {
+	//Release the font object when the class is being destructed
+	DeleteObject(hFont);
+}
+
+/*
+Description:    Set the caption of the label control
+Args:           Caption: New caption
+*/
+void IceLabel::SetText(wchar_t *Text) {
+	SetWindowText(hWnd, Text);
+}
+
+/*
+Description:    Set the font of the label control
+Args:           FontSize: New font size
+				Bold: Whether the font is bold or not
+*/
+void IceLabel::SetFont(int FontSize, bool Bold) {
+	//Referenced from: https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta
+	hFont = CreateFont(FontSize, 0, 0, 0,
+		Bold ? FW_BOLD : 0, 0, 0, 0,
+		DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+		CLEARTYPE_QUALITY, VARIABLE_PITCH, NULL);												//Create the new font
+	SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));								//Apply the new font
+}
+
+/*
+Description:    Resize the control to make it fits its contents
+*/
+void IceLabel::AutoResize() {
+	HDC		hDC = GetDC(hWnd);																	//HDC to the label
+	SIZE	szNewSize = { 0 };																	//Calculated new size of the label
+	wchar_t *buffer = new wchar_t[255];															//Buffer to store label text content
+
+	GetWindowText(hWnd, buffer, 255);															//Get text of the control
+	GetTextExtentPoint32(hDC, buffer, lstrlenW(buffer), &szNewSize);							//Calculate the new size
+	this->Size(szNewSize.cx, szNewSize.cy);														//Resize the control
+
+	delete[] buffer;																			//Release buffer memory
+	ReleaseDC(hWnd, hDC);																		//Release label HDC
 }
 
 //============================================================================
@@ -105,7 +162,7 @@ Args:           ParentHwnd: The parent window of the listview
 IceListView::IceListView(HWND ParentHwnd, int CtlID) {
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
 	SendMessage(hWnd, LVM_SETEXTENDEDLISTVIEWSTYLE,
-		LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);					//Add full-row select style for the listview
+		LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);											//Add full-row select style for the listview
 	GetWindowRect(hWnd, &CtlRect);
 }
 
@@ -117,20 +174,20 @@ Args:           Text: The text of the new column
 Return:			Index to of the new column if successful, or -1 otherwise
 */
 LRESULT IceListView::AddColumn(wchar_t *Text, int Width, int Index) {
-	LVCOLUMN	lvCol = { 0 };											//Listview column info
+	LVCOLUMN	lvCol = { 0 };																	//Listview column info
 
-	lvCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_FMT;						//Specific width, text and text alignment
+	lvCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_FMT;												//Specific width, text and text alignment
 	lvCol.fmt = LVCFMT_LEFT;
 	lvCol.cchTextMax = lstrlenW(Text);
 	lvCol.pszText = Text;
 	lvCol.cx = Width;
-	if (Index == -1)													//Add the column header to the end
+	if (Index == -1)																			//Add the column header to the end
 		return SendMessage(hWnd, LVM_INSERTCOLUMN,
-			SendMessage(														//Get the total number of column headers
-				(HWND)SendMessage(hWnd, LVM_GETHEADER, 0, 0),						//Get the handle to the column header
+			SendMessage(																				//Get the total number of column headers
+				(HWND)SendMessage(hWnd, LVM_GETHEADER, 0, 0),												//Get the handle to the column header
 				HDM_GETITEMCOUNT, 0, 0),
 			(LPARAM)&lvCol);
-	else																//Add the column header to the specified index
+	else																						//Add the column header to the specified index
 		return SendMessage(hWnd, LVM_INSERTCOLUMN, Index, (LPARAM)&lvCol);
 }
 
@@ -141,13 +198,13 @@ Args:           Text: The text of the new item
 Return:			Index to of the new item if successful, or -1 otherwise
 */
 LRESULT IceListView::AddItem(wchar_t *Text, int Index) {
-	LVITEM		lvi = { 0 };											//Listview item info
+	LVITEM		lvi = { 0 };																	//Listview item info
 
-	if (Index == -1)													//Add the item to the end
+	if (Index == -1)																			//Add the item to the end
 		lvi.iItem = SendMessage(hWnd, LVM_GETITEMCOUNT, 0, 0);
-	else																//Add the item to the specified index
+	else																						//Add the item to the specified index
 		lvi.iItem = Index;
-	lvi.mask = LVIF_TEXT;												//Specific text
+	lvi.mask = LVIF_TEXT;																		//Specific text
 	lvi.cchTextMax = lstrlenW(Text);
 	lvi.pszText = Text;
 	return SendMessage(hWnd, LVM_INSERTITEM, 0, (LPARAM)&lvi);
@@ -160,10 +217,10 @@ Args:           Index: The index of the item
 Return:			TRUE if successful, or FALSE otherwise
 */
 LRESULT IceListView::SetItemText(int Index, wchar_t *Text, int SubItemIndex = 0) {
-	LVITEM		lvi;													//Listview item info
+	LVITEM		lvi;																			//Listview item info
 
 	lvi.iSubItem = SubItemIndex;
-	lvi.mask = LVIF_TEXT;												//Specific text
+	lvi.mask = LVIF_TEXT;																		//Specific text
 	lvi.cchTextMax = lstrlenW(Text);
 	lvi.pszText = Text;
 	return SendMessage(hWnd, LVM_SETITEMTEXT, Index, (LPARAM)&lvi);
