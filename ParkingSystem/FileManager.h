@@ -32,7 +32,7 @@ private:
 	};
 
 public:
-	fstream			fsFile;							//File input/output stream
+	fstream			fsFile;								//File input/output stream
 	RecordFile		FileContent;						//Record file content
 	bool			WithoutFile = false;				//If the user selected continue without log file
 

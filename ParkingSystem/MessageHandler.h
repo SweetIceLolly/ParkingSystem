@@ -54,14 +54,13 @@ public:
 /* Description:		Label (Static) control class */
 class IceLabel : public BasicCtl {
 private:
-	HFONT				hFont;					//Font of the label
+	HFONT				hFont = NULL;			//Font of the label
 
 public:
 	IceLabel(HWND ParentHwnd, int CtlID);
 	~IceLabel();
 	void SetText(wchar_t *Text);
 	void SetFont(int FontSize, bool Bold);
-	void AutoResize();
 };
 
 /* Description:		Button control class */

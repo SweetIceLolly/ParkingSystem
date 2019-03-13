@@ -79,28 +79,15 @@ Args:           FontSize: New font size
 				Bold: Whether the font is bold or not
 */
 void IceLabel::SetFont(int FontSize, bool Bold) {
+	if (hFont)																					//Release the font object before a new one is created
+		DeleteObject(hFont);
+
 	//Referenced from: https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta
 	hFont = CreateFont(FontSize, 0, 0, 0,
 		Bold ? FW_BOLD : 0, 0, 0, 0,
 		DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
 		CLEARTYPE_QUALITY, VARIABLE_PITCH, NULL);												//Create the new font
-	SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));								//Apply the new font
-}
-
-/*
-Description:    Resize the control to make it fits its contents
-*/
-void IceLabel::AutoResize() {
-	HDC		hDC = GetDC(hWnd);																	//HDC to the label
-	SIZE	szNewSize = { 0 };																	//Calculated new size of the label
-	wchar_t *buffer = new wchar_t[255];															//Buffer to store label text content
-
-	GetWindowText(hWnd, buffer, 255);															//Get text of the control
-	GetTextExtentPoint32(hDC, buffer, lstrlenW(buffer), &szNewSize);							//Calculate the new size
-	this->Size(szNewSize.cx, szNewSize.cy);														//Resize the control
-
-	delete[] buffer;																			//Release buffer memory
-	ReleaseDC(hWnd, hDC);																		//Release label HDC
+	SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));							//Apply the new font
 }
 
 //============================================================================
@@ -133,7 +120,8 @@ Args:           ParentHwnd: The parent window of the editbox
 */
 IceEdit::IceEdit(HWND ParentHwnd, int CtlID, WNDPROC Proc) {
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
-	SetProp(hWnd, L"PrevWndProc", (HANDLE)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)Proc));		//Store previous window procedure
+	if (Proc)																					//If a window procedure is specified
+		SetProp(hWnd, L"PrevWndProc", (HANDLE)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)Proc));		//Store previous window procedure and set the new procedure
 	GetWindowRect(hWnd, &CtlRect);
 }
 
@@ -279,8 +267,12 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					mnuLog_Click();
 					break; 
 				
-				case ID_FILE_EXITSYSTEM:														//Exit System
+				case ID_FILE_EXITSYSTEM:														//Exit system
 					mnuExit_Click();
+					break;
+
+				case ID_STATUS_ENTER:															//Enter payment mode
+					mnuEnterPaymentMode_Click();
 					break;
 
 				case ID_STATUS_OPTIONS:															//System options

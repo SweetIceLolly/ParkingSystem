@@ -15,12 +15,23 @@ shared_ptr<IceListView>			lvLog;
 shared_ptr<IceLabel>			labPasswordIcon;
 shared_ptr<IceLabel>			labPassword;
 shared_ptr<IceLabel>			labWelcome;
+shared_ptr<IceLabel>			labPositionLeft;
+shared_ptr<IceLabel>			labCarNumber;
+shared_ptr<IceLabel>			labPrice;
+shared_ptr<IceLabel>			labTime;
+shared_ptr<IceEdit>				edCarNumber;
+shared_ptr<IceButton>			btnEnterOrExit;
 
 /*
 Description:    To handle main window resizing event
 */
 void MainWindow_Resize(HWND hWnd, int Width, int Height) {
-	lvLog->Size(Width, Height);
+	lvLog->Size(Width, Height);												//Change listview size
+	if (IsWindowVisible(labWelcome->hWnd))
+	labWelcome->Size(Width, Height / 3);									//Change welcome label size
+	labWelcome->SetFont(Width / 25, false);									//Change the font of label
+	btnEnterOrExit->Move(Width - 32 - btnEnterOrExit->CtlRect.right + btnEnterOrExit->CtlRect.left,
+		Height - 100);
 }
 
 /*
@@ -73,6 +84,13 @@ void btnLogin_Click() {
 }
 
 /*
+Description:	To handle enter & exit button event
+*/
+void btnEnterOrExit_Click() {
+
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create(HWND hWnd) {
@@ -92,11 +110,21 @@ void MainWindow_Create(HWND hWnd) {
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
 	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
-
-	labWelcome->SetFont(72, false);
-	labWelcome->AutoResize();
+	labPositionLeft = make_shared<IceLabel>(hWnd, IDC_POSITIONCOUNTLABEL);
+	labCarNumber = make_shared<IceLabel>(hWnd, IDC_CARNUMBERLABEL);
+	labPrice = make_shared<IceLabel>(hWnd, IDC_PRICELABEL);
+	labTime = make_shared<IceLabel>(hWnd, IDC_SYSTEMTIMELABEL);
+	edCarNumber = make_shared<IceEdit>(hWnd, IDC_CARNUMBEREDIT, (WNDPROC)NULL);
+	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
 	
 	//Set control properties
+	labWelcome->SetVisible(false);											//Hide unrelated controls
+	labPositionLeft->SetVisible(false);
+	labCarNumber->SetVisible(false);
+	labPrice->SetVisible(false);
+	labTime->SetVisible(false);
+	edCarNumber->SetVisible(false);
+	btnEnterOrExit->SetVisible(false);
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
 	lvLog->AddColumn(L"#", 40);												//Add columns to the log listview
 	lvLog->AddColumn(L"Car Number", 120);
@@ -125,6 +153,19 @@ void mnuExit_Click() {
 		DestroyWindow(GetMainWindowHandle());
 		PostQuitMessage(0);
 	}
+}
+
+/*
+Description:	To handle Enter Payment Mode menu event
+*/
+void mnuEnterPaymentMode_Click() {
+	labWelcome->SetVisible(true);											//Show payment-related controls
+	labPositionLeft->SetVisible(true);
+	labCarNumber->SetVisible(true);
+	labPrice->SetVisible(true);
+	labTime->SetVisible(true);
+	edCarNumber->SetVisible(true);
+	btnEnterOrExit->SetVisible(true);
 }
 
 /*
