@@ -43,7 +43,32 @@ Description:    Set the enabled status of the control
 Args:           Width, Height: The new size of the control
 */
 void BasicCtl::Size(int Width, int Height) {
-	SetWindowPos(hWnd, 0, 0, 0, Width, Height, SWP_NOZORDER | SWP_NOREPOSITION);
+	SetWindowPos(hWnd, 0, 0, 0, Width, Height, SWP_NOZORDER | SWP_NOMOVE);
+}
+
+/*
+Description:    Set the font of the control
+Args:           FontSize: New font size
+Bold: Whether the font is bold or not
+*/
+void BasicCtl::SetFont(int FontSize, bool Bold) {
+	if (hFont)																					//Release the font object before a new one is created
+		DeleteObject(hFont);
+
+	//Referenced from: https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta
+	hFont = CreateFont(FontSize, 0, 0, 0,
+		Bold ? FW_BOLD : 0, 0, 0, 0,
+		DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+		CLEARTYPE_QUALITY, VARIABLE_PITCH, NULL);												//Create the new font
+	SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));							//Apply the new font
+}
+
+/*
+Description:    Destructor of the control
+*/
+BasicCtl::~BasicCtl() {
+	//Release the font object when the class is being destructed
+	DeleteObject(hFont);
 }
 
 //============================================================================
@@ -58,36 +83,11 @@ IceLabel::IceLabel(HWND ParentHwnd, int CtlID) {
 }
 
 /*
-Description:    Destructor of the label control
-*/
-IceLabel::~IceLabel() {
-	//Release the font object when the class is being destructed
-	DeleteObject(hFont);
-}
-
-/*
 Description:    Set the caption of the label control
 Args:           Caption: New caption
 */
 void IceLabel::SetText(wchar_t *Text) {
 	SetWindowText(hWnd, Text);
-}
-
-/*
-Description:    Set the font of the label control
-Args:           FontSize: New font size
-				Bold: Whether the font is bold or not
-*/
-void IceLabel::SetFont(int FontSize, bool Bold) {
-	if (hFont)																					//Release the font object before a new one is created
-		DeleteObject(hFont);
-
-	//Referenced from: https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta
-	hFont = CreateFont(FontSize, 0, 0, 0,
-		Bold ? FW_BOLD : 0, 0, 0, 0,
-		DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
-		CLEARTYPE_QUALITY, VARIABLE_PITCH, NULL);												//Create the new font
-	SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));							//Apply the new font
 }
 
 //============================================================================

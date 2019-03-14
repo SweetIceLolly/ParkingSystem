@@ -41,26 +41,26 @@ Description:		Basic control class
 					This class contains basic functions for all controls
 */
 class BasicCtl {
+protected:
+	HFONT				hFont = NULL;			//Font of the control
+
 public:
 	HWND				hWnd;					//Control handle
 	RECT				CtlRect;				//non realtime-update
 
+	~BasicCtl();
 	void SetVisible(bool Visible);
 	void SetEnabled(bool Enabled);
 	void Move(int X, int Y);
 	void Size(int Width, int Height);
+	void SetFont(int FontSize, bool Bold);
 };
 
 /* Description:		Label (Static) control class */
 class IceLabel : public BasicCtl {
-private:
-	HFONT				hFont = NULL;			//Font of the label
-
 public:
 	IceLabel(HWND ParentHwnd, int CtlID);
-	~IceLabel();
 	void SetText(wchar_t *Text);
-	void SetFont(int FontSize, bool Bold);
 };
 
 /* Description:		Button control class */

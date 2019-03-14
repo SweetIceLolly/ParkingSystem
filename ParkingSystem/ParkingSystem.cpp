@@ -27,11 +27,29 @@ Description:    To handle main window resizing event
 */
 void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 	lvLog->Size(Width, Height);												//Change listview size
-	if (IsWindowVisible(labWelcome->hWnd))
-	labWelcome->Size(Width, Height / 3);									//Change welcome label size
-	labWelcome->SetFont(Width / 25, false);									//Change the font of label
-	btnEnterOrExit->Move(Width - 32 - btnEnterOrExit->CtlRect.right + btnEnterOrExit->CtlRect.left,
-		Height - 100);
+	if (IsWindowVisible(labWelcome->hWnd)) {								//Payment mode
+		//Change payment mode controls positions & sizes & fonts by ratio
+		labWelcome->Size(Width, Height / 3);									//Welcome label
+		labWelcome->SetFont(Width / 25, false);
+		btnEnterOrExit->Move(Width / 1.3, Height / 1.5);						//Enter/Exit button
+		btnEnterOrExit->Size(Width / 5, Height / 12);
+		btnEnterOrExit->SetFont(Width / 48, false);
+		labTime->Move(Width / 1.65, Height / 1.1);								//Time label
+		labTime->Size(Width, Height);
+		labTime->SetFont(Width / 35, false);
+		labPositionLeft->Move(15, Height / 1.85);								//Position left label
+		labPositionLeft->Size(Width / 2.5, Height / 12);
+		labPositionLeft->SetFont(Width / 35, false);
+		labCarNumber->Move(15, Height / 1.5);									//Car number label
+		labCarNumber->Size(Width / 2.5, Height / 12);
+		labCarNumber->SetFont(Width / 35, false);
+		labPrice->Move(15, Height / 1.25);										//Price label
+		labPrice->Size(Width / 1.35, Height / 12);
+		labPrice->SetFont(Width / 35, false);
+		edCarNumber->Move(Width / 2.2, Height / 1.5);							//Car number editbox
+		edCarNumber->Size(Width / 3.5, Height / 12);
+		edCarNumber->SetFont(Width / 35, false);
+	}
 }
 
 /*
@@ -125,8 +143,10 @@ void MainWindow_Create(HWND hWnd) {
 	labTime->SetVisible(false);
 	edCarNumber->SetVisible(false);
 	btnEnterOrExit->SetVisible(false);
+	labWelcome->Move(0, 0);													//Set the position of welcome label
+	lvLog->Move(0, 0);														//Set the position of listview
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
-	lvLog->AddColumn(L"#", 40);												//Add columns to the log listview
+	lvLog->AddColumn(L"#", 40);												//Add columns to log listview
 	lvLog->AddColumn(L"Car Number", 120);
 	lvLog->AddColumn(L"Enter Time (YYYY-MM-DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 145);
@@ -166,6 +186,7 @@ void mnuEnterPaymentMode_Click() {
 	labTime->SetVisible(true);
 	edCarNumber->SetVisible(true);
 	btnEnterOrExit->SetVisible(true);
+	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 }
 
 /*
