@@ -35,6 +35,25 @@ void btnLogin_Click();							//Login button click
 /* Event types */
 typedef void(*ButtonClickEvent)();              //Button_Click
 typedef void(*MenuClickEvent)();				//Menu_Click
+typedef void(*TimerEvent)();					//Timer_Timer
+
+/* Description:		Timer class */
+class IceTimer {
+private:
+	UINT_PTR			TimerID;				//Unique timer ID
+	bool				bEnabled;				//If the timer is enabled
+
+	static void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT_PTR idTimer, DWORD dwTime);
+
+public:
+	TimerEvent			TimerEventFunction;		//Timer_Timer() function
+	UINT				Interval;				//Timer interval
+
+	IceTimer(UINT Interval, TimerEvent Event, bool Enabled = false);
+	~IceTimer();
+	bool GetEnabled();
+	void SetEnabled(bool Enabled);
+};
 
 /*
 Description:		Basic control class

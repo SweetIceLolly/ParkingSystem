@@ -21,6 +21,7 @@ shared_ptr<IceLabel>			labPrice;
 shared_ptr<IceLabel>			labTime;
 shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
+shared_ptr<IceTimer>			tmrRefreshTime;
 
 /*
 Description:    To handle main window resizing event
@@ -109,6 +110,19 @@ void btnEnterOrExit_Click() {
 }
 
 /*
+Description:	Refresh system time
+*/
+void tmrRefreshTime_Timer() {
+	wchar_t		TimeStr[30];												//String buffer
+	SYSTEMTIME	st = { 0 };													//Retrieved system time
+
+	GetLocalTime(&st);														//Get current system time
+	wsprintf(TimeStr, L"Time: %04i-%02i-%02i %02i:%02i:%02i",
+		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);	//Make the string
+	labTime->SetText(TimeStr);
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create(HWND hWnd) {
@@ -134,6 +148,7 @@ void MainWindow_Create(HWND hWnd) {
 	labTime = make_shared<IceLabel>(hWnd, IDC_SYSTEMTIMELABEL);
 	edCarNumber = make_shared<IceEdit>(hWnd, IDC_CARNUMBEREDIT, (WNDPROC)NULL);
 	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
+	tmrRefreshTime = make_shared<IceTimer>(1000, tmrRefreshTime_Timer, true);
 	
 	//Set control properties
 	labWelcome->SetVisible(false);											//Hide unrelated controls
@@ -143,7 +158,7 @@ void MainWindow_Create(HWND hWnd) {
 	labTime->SetVisible(false);
 	edCarNumber->SetVisible(false);
 	btnEnterOrExit->SetVisible(false);
-	labWelcome->Move(0, 0);													//Set the position of welcome label
+	labWelcome->Move(0, 20);												//Set the position of welcome label
 	lvLog->Move(0, 0);														//Set the position of listview
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
 	lvLog->AddColumn(L"#", 40);												//Add columns to log listview

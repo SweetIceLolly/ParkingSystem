@@ -12,6 +12,55 @@ HWND		hwndMainWindow;							//Main window handle
 
 //============================================================================
 /*
+Description:    Constructor of the timer class
+Args:           Visible: New visibility status
+*/
+IceTimer::IceTimer(UINT Interval, TimerEvent Event, bool Enabled) {
+	TimerEventFunction = Event;															//Set the event function
+	TimerID = SetTimer(hwndMainWindow, (UINT_PTR)this, Interval, (TIMERPROC)TimerProc);	//Create a timer with ID = pointer to this class
+	SetEnabled(Enabled);																//Set the Enabled status
+}
+
+/*
+Description:    Destructor of the timer class
+*/
+IceTimer::~IceTimer() {
+	KillTimer(NULL, TimerID);															//Kill the timer
+}
+
+/*
+Description:    Return Enabled property of the timer
+Return:			true if the timer is enabled, false otherwise
+*/
+bool IceTimer::GetEnabled() {
+	return bEnabled;
+}
+
+/*
+Description:    Set Enabled property of the control
+Args:           Enabled: New Enabled status
+*/
+void IceTimer::SetEnabled(bool Enabled) {
+	bEnabled = Enabled;
+	KillTimer(NULL, TimerID);															//Kill the matter anyway
+	if (Enabled)																		//If Enabled = true, re-create the timer
+		TimerID = SetTimer(NULL, (UINT_PTR)this, Interval, (TIMERPROC)TimerProc);
+}
+
+/*
+Description:	Timer procedure
+Args:			hWnd: Handle to window for timer messages
+				uMsg: WM_TIMER message
+				idTimer: Timer identifier
+				dwTime: Current system time
+*/
+void CALLBACK IceTimer::TimerProc(HWND hWnd, UINT uMsg, UINT_PTR idTimer, DWORD dwTime) {
+	//Invoke Timer_Timer(). Note that idTimer is a ppinter to this class
+	((IceTimer*)idTimer)->TimerEventFunction();
+}
+
+//============================================================================
+/*
 Description:    Set the visiblility of the control
 Args:           Visible: New visibility status
 */
@@ -49,7 +98,7 @@ void BasicCtl::Size(int Width, int Height) {
 /*
 Description:    Set the font of the control
 Args:           FontSize: New font size
-Bold: Whether the font is bold or not
+Bold:			Whether the font is bold or not
 */
 void BasicCtl::SetFont(int FontSize, bool Bold) {
 	if (hFont)																					//Release the font object before a new one is created
@@ -231,11 +280,14 @@ HINSTANCE GetProgramInstance() {
 	return ProgramInstance;
 }
 
+/*
+Description:    This retrieves handle to the main window from hwndMainWindow
+Return:			Handle to the main window
+*/
 HWND GetMainWindowHandle() {
 	return hwndMainWindow;
 }
 
-//============================================================================
 /*
 Description:    Main window procedure
 Args:           hWnd: Handle to the window
@@ -298,6 +350,13 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	return 0;
 }
 
+/*
+Description:    Password editbox procedure
+Args:           hWnd: Handle to the window
+                uMsg: Message code
+                wParam, lParam: Extra infos
+Return:         Result of message handling
+*/
 LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (uMsg == WM_GETDLGCODE)													//Tell the system that this editbox wants all keys
 		//Referenced from: https://support.microsoft.com/en-us/help/102589/how-to-use-the-enter-key-from-edit-controls-in-a-dialog-box
