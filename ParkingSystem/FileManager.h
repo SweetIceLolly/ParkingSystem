@@ -19,7 +19,7 @@ private:
 	struct LogInfo {
 		wchar_t			CarNumber[10];					//Car number
 		SYSTEMTIME		EnterTime;						//Enter time of the car
-		SYSTEMTIME		LeaveTime;						//Leave time of the car
+		SYSTEMTIME		LeaveTime;						//Leave time of the car. If the car is not left, LeaveTime.wYear = 0
 		int				CarPos;							//Parked position
 		int				Fee;							//Fee paid
 	};

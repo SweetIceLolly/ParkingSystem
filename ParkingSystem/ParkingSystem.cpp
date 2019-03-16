@@ -23,6 +23,8 @@ shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
 shared_ptr<IceTimer>			tmrRefreshTime;
 
+vector<wchar_t*>				CurrParkedCars;								//Cars currently parked in the carpark
+
 /*
 Description:    To handle main window resizing event
 */
@@ -82,6 +84,12 @@ void btnLogin_Click() {
 		//Hide and show the window to apply new style
 		ShowWindow(GetMainWindowHandle(), SW_HIDE);
 		ShowWindow(GetMainWindowHandle(), SW_SHOW);
+
+		//Add parking cars to the list
+		for (int i = 0; i < LogFile->FileContent.ElementCount; i++) {
+			if (LogFile->FileContent.LogData[i].LeaveTime.wYear != 0)				//If the car is not left, add it to the list
+				CurrParkedCars.push_back(LogFile->FileContent.LogData[i].CarNumber);
+		}
 	}
 	else {																	//Password incorrect
 		if (nTry--) {
@@ -106,7 +114,13 @@ void btnLogin_Click() {
 Description:	To handle enter & exit button event
 */
 void btnEnterOrExit_Click() {
+	wchar_t		CarNumber[10];
+	SYSTEMTIME	CurrTime = { 0 };
+	SYSTEMTIME	ZeroTime = { 0 };
 
+	GetLocalTime(&CurrTime);
+	edCarNumber->GetText(CarNumber);
+	LogFile->AddLog(CarNumber, CurrTime, ZeroTime, 10, 50);
 }
 
 /*
@@ -160,7 +174,8 @@ void MainWindow_Create(HWND hWnd) {
 	btnEnterOrExit->SetVisible(false);
 	labWelcome->Move(0, 20);												//Set the position of welcome label
 	lvLog->Move(0, 0);														//Set the position of listview
-	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max.length of password editbox
+	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max length of password editbox
+	SendMessage(edCarNumber->hWnd, EM_SETLIMITTEXT, 10, 0);					//Max length of car number editbox
 	lvLog->AddColumn(L"#", 40);												//Add columns to log listview
 	lvLog->AddColumn(L"Car Number", 120);
 	lvLog->AddColumn(L"Enter Time (YYYY-MM-DD HH:MM:SS)", 145);
@@ -194,6 +209,7 @@ void mnuExit_Click() {
 Description:	To handle Enter Payment Mode menu event
 */
 void mnuEnterPaymentMode_Click() {
+	lvLog->SetVisible(false);												//Hide unrelated controls
 	labWelcome->SetVisible(true);											//Show payment-related controls
 	labPositionLeft->SetVisible(true);
 	labCarNumber->SetVisible(true);
@@ -202,6 +218,7 @@ void mnuEnterPaymentMode_Click() {
 	edCarNumber->SetVisible(true);
 	btnEnterOrExit->SetVisible(true);
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
+	SetFocus(edCarNumber->hWnd);											//Set input focus to the car number textbox
 }
 
 /*

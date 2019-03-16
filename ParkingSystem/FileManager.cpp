@@ -14,9 +14,10 @@ Args:			FilePath: Log file path
 IceEncryptedFile::IceEncryptedFile(const wchar_t *FilePath) {
 	//Open log file
 	lstrcpyW(FileContent.Password, L"123");													//Set the default password
-	fsFile.open(FilePath, ios::binary | ios::in | ios::out);
+	FileContent.ElementCount = 0;															//Set the default element count
+	fsFile.open(FilePath, ios::binary | ios::in | ios::out);								//Attempt to open the file with read/write privilege
 	if (fsFile.fail()) {
-		fsFile.open(FilePath, ios::binary | ios::out);											//Create log file if it doesn't exist
+		fsFile.open(FilePath, ios::binary | ios::out);											//Create log file if it doesn't exist, open it with write privilege only
 		if (fsFile.fail()) {																		//Path not accessible
 			fsFile.close();
 			if (MessageBox(GetMainWindowHandle(),
@@ -36,7 +37,7 @@ IceEncryptedFile::IceEncryptedFile(const wchar_t *FilePath) {
 			if (MessageBox(GetMainWindowHandle(),
 				L"Failed to initalize the log file content! Please make sure the file is writable! Continue without log file?",
 				L"Error",
-				MB_ICONERROR | MB_YESNO) == IDNO) {
+				MB_ICONERROR | MB_YESNO) == IDNO) {												//Show a prompt if failed to initalize file content
 
 				DestroyWindow(GetMainWindowHandle());												//Quit the system
 				PostQuitMessage(0);
@@ -44,13 +45,17 @@ IceEncryptedFile::IceEncryptedFile(const wchar_t *FilePath) {
 			else																				//Continuing without log file
 				WithoutFile = true;
 		}
+		else {																				//Reopen the file with read/write privilege
+			fsFile.close();
+			fsFile.open(FilePath, ios::binary | ios::in | ios::out);
+		}
 	}
 
 	//Check file size
 	fsFile.seekg(0, ios::end);
 	streamoff	szFile = fsFile.tellg();														//Get file size
 	fsFile.clear();
-	fsFile.seekg(0);
+	fsFile.seekg(0, ios::beg);
 	if (szFile < sizeof(FileContent) - sizeof(wchar_t) * 20) {									//Invalid file size
 		if (MessageBox(GetMainWindowHandle(),
 			L"Invalid file content! Create a new file to replace current file?",
@@ -109,6 +114,7 @@ bool IceEncryptedFile::AddLog(wchar_t CarNumber[10], SYSTEMTIME EnterTime, SYSTE
 
 	FileContent.LogData.push_back(info);														//Add log
 	FileContent.ElementCount++;	
+	SaveFile();																					//Update the log file
 	return true;
 }
 
@@ -124,14 +130,14 @@ bool IceEncryptedFile::SaveFile() {
 	unique_ptr<BYTE[]> Buffer(new BYTE[szFile]);												//Allocate binary content buffer
 
 	memcpy(Buffer.get(), FileContent.Password, sizeof(wchar_t) * 20);							//Password
-	memcpy(Buffer.get() + sizeof(wchar_t)* 20, &(FileContent.ElementCount), sizeof(UINT));		//Element count
-	memcpy(Buffer.get() + sizeof(wchar_t)* 20 + 4, FileContent.LogData.data(),
+	memcpy(Buffer.get() + sizeof(wchar_t) * 20, &(FileContent.ElementCount), sizeof(UINT));		//Element count
+	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + 4, FileContent.LogData.data(),
 		sizeof(LogInfo) * FileContent.ElementCount);											//All log data
 	int KeyLen = lstrlenW(FileContent.Password);
 	if (KeyLen <= 0)																			//Check password length
 		return false;
-	for (int i = 0; i < szFile; Buffer[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));		//Encrypt binary data
-	fsFile.seekg(0);
+	for (int i = 0; i < szFile; Buffer.get()[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));	//Encrypt binary data
+	fsFile.seekg(0, ios::beg);
 	fsFile.write((char*)Buffer.get(), szFile);													//Write to the file
 	fsFile.flush();																				//Update the content of the file
 
@@ -157,13 +163,13 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 	if (szFile == -1) {																			//Failed to get file size
 		return false;
 	}
-	fsFile.seekg(0);
+	fsFile.seekg(0, ios::beg);																	//Change file pointer to the beginning of file
 	unique_ptr<BYTE[]> Buffer(new BYTE[(int)szFile]);											//Smart pointer to the buffer
 
 	//Read file contents
 	fsFile.read((char*)(Buffer.get()), szFile);													//Read whole file
 	for (int i = 0; i < szFile; Buffer.get()[i++] ^= (487 ^ Password[i % KeyLen]));	 			//Decrypt binary data with the provided password
-	if (!lstrcmpW((LPWSTR)Buffer.get(), Password)) {											//Check if the decrypted password matches with the provided password
+	if (!lstrcmpW((wchar_t*)Buffer.get(), Password)) {											//Check if the decrypted password matches with the provided password
 		memcpy(FileContent.Password, Buffer.get(), sizeof(wchar_t) * 20);							//Password
 		memcpy(&(FileContent.ElementCount), Buffer.get() + sizeof(wchar_t) * 20, sizeof(UINT));		//Element count
 		FileContent.LogData.resize(FileContent.ElementCount);										//Allocate LogData elements
