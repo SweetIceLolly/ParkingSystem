@@ -21,9 +21,9 @@ shared_ptr<IceLabel>			labPrice;
 shared_ptr<IceLabel>			labTime;
 shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
-shared_ptr<IceTimer>			tmrRefreshTime;
+shared_ptr<IceTimer>			tmrRefreshTime; 
 
-vector<wchar_t*>				CurrParkedCars;								//Cars currently parked in the carpark
+vector<UINT>					CurrParkedCars;								//Cars currently parked, index of LogFile->FileContent.LogData
 
 /*
 Description:    To handle main window resizing event
@@ -86,9 +86,9 @@ void btnLogin_Click() {
 		ShowWindow(GetMainWindowHandle(), SW_SHOW);
 
 		//Add parking cars to the list
-		for (int i = 0; i < LogFile->FileContent.ElementCount; i++) {
-			if (LogFile->FileContent.LogData[i].LeaveTime.wYear != 0)				//If the car is not left, add it to the list
-				CurrParkedCars.push_back(LogFile->FileContent.LogData[i].CarNumber);
+		for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+			if (LogFile->FileContent.LogData[i].LeaveTime.wYear == 0)			//If the car is not left, add it to the list
+				CurrParkedCars.push_back(i);
 		}
 	}
 	else {																	//Password incorrect
@@ -114,13 +114,32 @@ void btnLogin_Click() {
 Description:	To handle enter & exit button event
 */
 void btnEnterOrExit_Click() {
-	wchar_t		CarNumber[10];
-	SYSTEMTIME	CurrTime = { 0 };
-	SYSTEMTIME	ZeroTime = { 0 };
+	wchar_t		CarNumber[10];												//Car number buffer
+	SYSTEMTIME	CurrTime = { 0 };											//Current time
 
-	GetLocalTime(&CurrTime);
+	GetLocalTime(&CurrTime);												//Get current system time
 	edCarNumber->GetText(CarNumber);
-	LogFile->AddLog(CarNumber, CurrTime, ZeroTime, 10, 50);
+
+	//Determine whether the car is entering or leaving
+	for (UINT i = 0; i < CurrParkedCars.size(); i++) {						//Search for the car number in the parked cars list
+		//Matched, means the car is leaving
+		if (!lstrcmpW(CarNumber, LogFile->FileContent.LogData[CurrParkedCars[i]].CarNumber)) {
+			labWelcome->SetText(L"Leave");
+			LogFile->FileContent.LogData[CurrParkedCars[i]].LeaveTime = CurrTime;		//Record leave time of the car
+			//ToDo: calc fee
+			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
+			LogFile->SaveFile();
+			//return;
+		}
+	}
+
+	//No matched result, means the car is entering
+	//ToDo: allocate parking pos
+	labWelcome->SetText(L"Enter");
+	LogFile->AddLog(CarNumber, CurrTime, { 0 }, 10, 0);						//Add car enter log
+	CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);		//Add the log index to the parked cars list
+
+	//LogFile->AddLog(CarNumber, CurrTime, ZeroTime, 10, 50);
 }
 
 /*
