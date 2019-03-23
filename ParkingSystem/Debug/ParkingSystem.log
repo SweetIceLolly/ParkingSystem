@@ -1,12 +1,9 @@
-﻿  ParkingSystem.cpp
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(37): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(40): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(43): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(44): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(46): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(47): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(49): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(50): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(52): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(53): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe
+﻿Build started 3/23/2019 11:42:31 AM.
+     1>Project "C:\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         ParkingSystem.vcxproj -> C:\ParkingSystem\Debug\ParkingSystem.exe
+     1>Done Building Project "C:\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.03

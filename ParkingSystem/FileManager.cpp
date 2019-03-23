@@ -14,6 +14,7 @@ Args:			FilePath: Log file path
 IceEncryptedFile::IceEncryptedFile(const wchar_t *FilePath) {
 	//Open log file
 	lstrcpyW(FileContent.Password, L"123");													//Set the default password
+	FileContent.FeePerHour = 10;															//Set the default fee per hour
 	FileContent.ElementCount = 0;															//Set the default element count
 	fsFile.open(FilePath, ios::binary | ios::in | ios::out);								//Attempt to open the file with read/write privilege
 	if (fsFile.fail()) {
@@ -126,13 +127,15 @@ bool IceEncryptedFile::SaveFile() {
 	if (fsFile.fail() || WithoutFile)															//No file opened
 		return false;
 	
-	int		szFile = sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(LogInfo) * FileContent.ElementCount;
+	int		szFile = sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(int) + sizeof(LogInfo) * FileContent.ElementCount;
 	unique_ptr<BYTE[]> Buffer(new BYTE[szFile]);												//Allocate binary content buffer
 
 	memcpy(Buffer.get(), FileContent.Password, sizeof(wchar_t) * 20);							//Password
 	memcpy(Buffer.get() + sizeof(wchar_t) * 20, &(FileContent.ElementCount), sizeof(UINT));		//Element count
-	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + 4, FileContent.LogData.data(),
-		sizeof(LogInfo) * FileContent.ElementCount);											//All log data
+	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT),
+		&(FileContent.FeePerHour), sizeof(int));												//Fee per hour
+	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(int),
+		FileContent.LogData.data(), sizeof(LogInfo) * FileContent.ElementCount);				//All log data
 	int KeyLen = lstrlenW(FileContent.Password);
 	if (KeyLen <= 0)																			//Check password length
 		return false;
@@ -172,8 +175,11 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 	if (!lstrcmpW((wchar_t*)Buffer.get(), Password)) {											//Check if the decrypted password matches with the provided password
 		memcpy(FileContent.Password, Buffer.get(), sizeof(wchar_t) * 20);							//Password
 		memcpy(&(FileContent.ElementCount), Buffer.get() + sizeof(wchar_t) * 20, sizeof(UINT));		//Element count
+		memcpy(&(FileContent.FeePerHour),
+			Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT), sizeof(int));						//Fee per hour
 		FileContent.LogData.resize(FileContent.ElementCount);										//Allocate LogData elements
-		memcpy(FileContent.LogData.data(), Buffer.get() + sizeof(wchar_t) * 20 + 4,
+		memcpy(FileContent.LogData.data(),
+			Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(int),
 			sizeof(LogInfo)* FileContent.ElementCount);												//All log data
 		return true;
 	}

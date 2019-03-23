@@ -28,6 +28,7 @@ private:
 	struct RecordFile {
 		wchar_t			Password[20];					//User password
 		UINT			ElementCount;					//No. of elements of LogData
+		int				FeePerHour;						//Fee per hour
 		vector<LogInfo>	LogData;						//File content
 	};
 

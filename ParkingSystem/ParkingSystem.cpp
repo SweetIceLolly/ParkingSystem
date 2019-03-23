@@ -126,7 +126,11 @@ void btnEnterOrExit_Click() {
 		if (!lstrcmpW(CarNumber, LogFile->FileContent.LogData[CurrParkedCars[i]].CarNumber)) {
 			labWelcome->SetText(L"Leave");
 			LogFile->FileContent.LogData[CurrParkedCars[i]].LeaveTime = CurrTime;		//Record leave time of the car
-			//ToDo: calc fee
+			
+			//Calculate fee when the car is leaving
+			int	Fee = 0;
+			
+
 			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
 			LogFile->SaveFile();
 			//return;
