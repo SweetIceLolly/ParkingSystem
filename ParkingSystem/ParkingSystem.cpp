@@ -129,7 +129,50 @@ void btnEnterOrExit_Click() {
 			
 			//Calculate fee when the car is leaving
 			int	Fee = 0;
-			
+			/* Date calculation model
+			int calcDate() {
+				SYSTEMTIME	a = { 0 }, b = { 0 };
+				int			difference = 0;
+
+				//From a to b
+				a.wYear = 2018;
+				a.wMonth = 12;
+				a.wDay = 31;
+				a.wHour = 0;
+				a.wMinute = 0;
+	
+				b.wYear = 2019;
+				b.wMonth = 1;
+				b.wDay = 1;
+				b.wHour = 2;
+				b.wMinute = 0;
+
+				if (b.wDay < a.wDay) {
+					if (b.wMonth == 2) {
+						if ((b.wYear % 4 == 0 && b.wYear % 100 != 0) || (b.wYear & 400 == 0))
+							b.wDay += 29;
+						else
+							b.wDay += 28;
+					}
+					else if (b.wMonth == 5 || b.wMonth == 7 || b.wMonth == 10 || b.wMonth == 12)
+						b.wDay += 30;
+					else
+						b.wDay += 31;
+					b.wMonth--;
+				}
+
+				if (b.wMonth < a.wMonth) {
+					b.wMonth += 12;
+					b.wYear--;
+				}
+
+				difference = (b.wYear - a.wYear + b.wMonth - a.wMonth + b.wDay - a.wDay) * 24 + b.wHour - a.wHour;
+				if (b.wMinute > 0)
+					difference++;
+
+				return difference;
+			}
+			*/
 
 			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
 			LogFile->SaveFile();
