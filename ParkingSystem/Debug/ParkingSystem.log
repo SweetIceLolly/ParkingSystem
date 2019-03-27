@@ -1,9 +1,2 @@
-﻿Build started 3/23/2019 11:42:31 AM.
-     1>Project "C:\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" on node 2 (Build target(s)).
-     1>Link:
-         ParkingSystem.vcxproj -> C:\ParkingSystem\Debug\ParkingSystem.exe
-     1>Done Building Project "C:\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" (Build target(s)).
-
-Build succeeded.
-
-Time Elapsed 00:00:00.03
+﻿  MessageHandler.cpp
+  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe

@@ -21,7 +21,8 @@ shared_ptr<IceLabel>			labPrice;
 shared_ptr<IceLabel>			labTime;
 shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
-shared_ptr<IceTimer>			tmrRefreshTime; 
+shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
+shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
 
 vector<UINT>					CurrParkedCars;								//Cars currently parked, index of LogFile->FileContent.LogData
 
@@ -128,55 +129,57 @@ void btnEnterOrExit_Click() {
 			LogFile->FileContent.LogData[CurrParkedCars[i]].LeaveTime = CurrTime;		//Record leave time of the car
 			
 			//Calculate fee when the car is leaving
-			int	Fee = 0;
-			/* Date calculation model
-			int calcDate() {
-				SYSTEMTIME	a = { 0 }, b = { 0 };
-				int			difference = 0;
+			int				HourDifference;												//No. of hours between EnterTime and CurrTime
+			SYSTEMTIME		*EnterTime =
+				&(LogFile->FileContent.LogData[CurrParkedCars[i]].EnterTime);			//Get a pointer to EnterTime of current log for convenience
 
-				//From a to b
-				a.wYear = 2018;
-				a.wMonth = 12;
-				a.wDay = 31;
-				a.wHour = 0;
-				a.wMinute = 0;
-	
-				b.wYear = 2019;
-				b.wMonth = 1;
-				b.wDay = 1;
-				b.wHour = 2;
-				b.wMinute = 0;
+			if (CurrTime.wDay < EnterTime->wDay) {
+				if (CurrTime.wMonth == 2) {												//February
+					if ((CurrTime.wYear % 4 == 0 && CurrTime.wYear % 100 != 0) ||
+						(CurrTime.wYear % 400 == 0))										//For leap years, 29 days in Feb
 
-				if (b.wDay < a.wDay) {
-					if (b.wMonth == 2) {
-						if ((b.wYear % 4 == 0 && b.wYear % 100 != 0) || (b.wYear & 400 == 0))
-							b.wDay += 29;
-						else
-							b.wDay += 28;
-					}
-					else if (b.wMonth == 5 || b.wMonth == 7 || b.wMonth == 10 || b.wMonth == 12)
-						b.wDay += 30;
-					else
-						b.wDay += 31;
-					b.wMonth--;
+						CurrTime.wDay += 29;
+					else																	//For normal years, 28 days in Feb
+						CurrTime.wDay += 28;
 				}
-
-				if (b.wMonth < a.wMonth) {
-					b.wMonth += 12;
-					b.wYear--;
-				}
-
-				difference = (b.wYear - a.wYear + b.wMonth - a.wMonth + b.wDay - a.wDay) * 24 + b.wHour - a.wHour;
-				if (b.wMinute > 0)
-					difference++;
-
-				return difference;
+				else if (CurrTime.wMonth == 5 || CurrTime.wMonth == 7 || CurrTime.wMonth == 10 || CurrTime.wMonth == 12)
+					CurrTime.wDay += 30;													//30-days months
+				else
+					CurrTime.wDay += 31;													//31-days months
+				CurrTime.wMonth--;														//Month reduced by 1 cuz we just added the days to wDay
 			}
-			*/
+
+			if (CurrTime.wMonth < EnterTime->wMonth) {								//Not a full year
+				CurrTime.wMonth += 12;
+				CurrTime.wYear--;
+			}
+
+			HourDifference = (CurrTime.wYear - EnterTime->wYear +
+				CurrTime.wMonth - EnterTime->wMonth +
+				CurrTime.wDay - EnterTime->wDay) * 24 +
+				CurrTime.wHour - EnterTime->wHour;									//Calculate date difference in hours
+			if (CurrTime.wMinute > 0)													//Less than 1 hour = 1 hour
+				HourDifference++;
+
+			LogFile->FileContent.LogData[CurrParkedCars[i]].Fee = HourDifference * LogFile->FileContent.FeePerHour;
+			if (HourDifference > 5)														//20% off for >5hrs parking
+				LogFile->FileContent.LogData[CurrParkedCars[i]].Fee *= 0.8;
+
+			//Display parking hours and fee
+			wchar_t			bufStr[45];
+			wsprintf(bufStr, L"Hours Parked: %ihr, Fee: $%i",
+				1, HourDifference, LogFile->FileContent.LogData[CurrParkedCars[i]].Fee);
+			labWelcome->SetText(bufStr);
 
 			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
 			LogFile->SaveFile();
-			//return;
+
+			//Clean the window
+			edCarNumber->SetText(L"");
+			SetFocus(edCarNumber->hWnd);
+			tmrRestoreWelcomeText->SetEnabled(true);									//Restore welcome text after few seconds
+
+			return;
 		}
 	}
 
@@ -186,7 +189,10 @@ void btnEnterOrExit_Click() {
 	LogFile->AddLog(CarNumber, CurrTime, { 0 }, 10, 0);						//Add car enter log
 	CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);		//Add the log index to the parked cars list
 
-	//LogFile->AddLog(CarNumber, CurrTime, ZeroTime, 10, 50);
+	//Clean the window
+	edCarNumber->SetText(L"");
+	SetFocus(edCarNumber->hWnd);
+	tmrRestoreWelcomeText->SetEnabled(true);								//Restore welcome text after few seconds
 }
 
 /*
@@ -200,6 +206,14 @@ void tmrRefreshTime_Timer() {
 	wsprintf(TimeStr, L"Time: %04i-%02i-%02i %02i:%02i:%02i",
 		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);	//Make the string
 	labTime->SetText(TimeStr);
+}
+
+/*
+Description:	Restore welome text few seconds after a car leaves
+*/
+void tmrRestoreWelcomeText_Timer() {
+	labWelcome->SetText(L"Welcome to Shar Carpark!");						//Restore the welcome text
+	tmrRestoreWelcomeText->SetEnabled(false);									//Disable the timer
 }
 
 /*
@@ -229,6 +243,7 @@ void MainWindow_Create(HWND hWnd) {
 	edCarNumber = make_shared<IceEdit>(hWnd, IDC_CARNUMBEREDIT, (WNDPROC)NULL);
 	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
 	tmrRefreshTime = make_shared<IceTimer>(1000, tmrRefreshTime_Timer, true);
+	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
 	
 	//Set control properties
 	labWelcome->SetVisible(false);											//Hide unrelated controls

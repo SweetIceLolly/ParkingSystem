@@ -17,6 +17,7 @@ Args:           Visible: New visibility status
 */
 IceTimer::IceTimer(UINT Interval, TimerEvent Event, bool Enabled) {
 	TimerEventFunction = Event;															//Set the event function
+	IceTimer::Interval = Interval;														//Record the interval
 	TimerID = SetTimer(hwndMainWindow, (UINT_PTR)this, Interval, (TIMERPROC)TimerProc);	//Create a timer with ID = pointer to this class
 	SetEnabled(Enabled);																//Set the Enabled status
 }
@@ -42,9 +43,9 @@ Args:           Enabled: New Enabled status
 */
 void IceTimer::SetEnabled(bool Enabled) {
 	bEnabled = Enabled;
-	KillTimer(NULL, TimerID);															//Kill the matter anyway
+	KillTimer(hwndMainWindow, TimerID);													//Kill the timer anyway
 	if (Enabled)																		//If Enabled = true, re-create the timer
-		TimerID = SetTimer(NULL, (UINT_PTR)this, Interval, (TIMERPROC)TimerProc);
+		TimerID = SetTimer(hwndMainWindow, (UINT_PTR)this, Interval, (TIMERPROC)TimerProc);
 }
 
 /*
