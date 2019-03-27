@@ -7,6 +7,17 @@ File:           MessageHandler.cpp
 
 #include "MessageHandler.h"
 
+/*
+Referenced from: https://support.microsoft.com/en-us/help/102589/how-to-use-the-enter-key-from-edit-controls-in-a-dialog-box
+Tell the system that this editbox wants all keys
+This macro is only used in editbox procedures
+*/
+#define		EDIT_PROC_DEFAULT_OPERATION				\
+	if (uMsg == WM_GETDLGCODE)						\
+		return (DLGC_WANTALLKEYS |					\
+			CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam));
+	
+
 HINSTANCE	ProgramInstance;						//Instance of the program
 HWND		hwndMainWindow;							//Main window handle
 
@@ -359,18 +370,45 @@ Args:           hWnd: Handle to the window
 Return:         Result of message handling
 */
 LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	if (uMsg == WM_GETDLGCODE)													//Tell the system that this editbox wants all keys
-		//Referenced from: https://support.microsoft.com/en-us/help/102589/how-to-use-the-enter-key-from-edit-controls-in-a-dialog-box
-		return (DLGC_WANTALLKEYS |
-			CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam));
-
-	if (uMsg == WM_CHAR) {														//Key pressed message
+	EDIT_PROC_DEFAULT_OPERATION
+	
+	if(uMsg == WM_CHAR) {														//Key pressed message
 		if (wParam == VK_RETURN) {
 			btnLogin_Click();
 			return 0;
 		}
 	}
 	
+	//Call the default window prodecure of the editbpx
+	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
+}
+
+/*
+Description:    Car number editbox procedure
+Args:           hWnd: Handle to the window
+				uMsg: Message code
+				wParam, lParam: Extra infos
+Return:         Result of message handling
+*/
+LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	EDIT_PROC_DEFAULT_OPERATION
+	
+	if(uMsg == WM_CHAR) {													//Key pressed message
+		if (wParam == VK_RETURN) {
+			btnEnterOrExit_Click();
+			return 0;
+		}
+		else if ((wParam > 'z' || wParam < 'a') &&
+			(wParam > 'Z' || wParam < 'A') &&
+			(wParam > '9' || wParam < '0') &&
+			(wParam != VK_DELETE) &&
+			(wParam != VK_BACK))													//Accept numbers, letters and delete keys only, reject other characters
+
+			return 0;
+	}
+	else if (uMsg == WM_PASTE)													//Block paste message
+		return 0;
+
 	//Call the default window prodecure of the editbpx
 	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
 }

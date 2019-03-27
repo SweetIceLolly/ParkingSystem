@@ -15,6 +15,7 @@ HWND GetMainWindowHandle();																//This retrieves main window handle
 INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    //Main window procedure
 LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);        //Button control procedure
 LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//Password editbox control procedure
+LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//Car number editbox control procedure
 
 /* Main window menu events */
 void mnuLog_Click();
@@ -29,8 +30,9 @@ void mnuHowToUse_Click();
 void mnuAbout_Click();
 
 /* Main window events */
-void MainWindow_Resize(HWND, int, int);		//Window_Resize
+void MainWindow_Resize(HWND, int, int);			//Window_Resize
 void btnLogin_Click();							//Login button click
+void btnEnterOrExit_Click();					//Car enter/exit button click
 
 /* Event types */
 typedef void(*ButtonClickEvent)();              //Button_Click

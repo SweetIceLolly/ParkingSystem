@@ -25,6 +25,7 @@ shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time o
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
 
 vector<UINT>					CurrParkedCars;								//Cars currently parked, index of LogFile->FileContent.LogData
+bool							ParkingPos[100] = { 0 };					//Available parking positions (true = occupied)
 
 /*
 Description:    To handle main window resizing event
@@ -88,8 +89,10 @@ void btnLogin_Click() {
 
 		//Add parking cars to the list
 		for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
-			if (LogFile->FileContent.LogData[i].LeaveTime.wYear == 0)			//If the car is not left, add it to the list
-				CurrParkedCars.push_back(i);
+			if (LogFile->FileContent.LogData[i].LeaveTime.wYear == 0) {			//If the car is not left
+				CurrParkedCars.push_back(i);										//Add it to the parked list
+				ParkingPos[LogFile->FileContent.LogData[i].CarPos] = true;			//Mark the parking position as occupied
+			}
 		}
 	}
 	else {																	//Password incorrect
@@ -121,12 +124,19 @@ void btnEnterOrExit_Click() {
 	GetLocalTime(&CurrTime);												//Get current system time
 	edCarNumber->GetText(CarNumber);
 
+	//Detect empty text
+	if (lstrlenW(CarNumber) == 0) {
+		SetFocus(edCarNumber->hWnd);
+		return;
+	}
+
 	//Determine whether the car is entering or leaving
 	for (UINT i = 0; i < CurrParkedCars.size(); i++) {						//Search for the car number in the parked cars list
 		//Matched, means the car is leaving
 		if (!lstrcmpW(CarNumber, LogFile->FileContent.LogData[CurrParkedCars[i]].CarNumber)) {
 			labWelcome->SetText(L"Leave");
 			LogFile->FileContent.LogData[CurrParkedCars[i]].LeaveTime = CurrTime;		//Record leave time of the car
+			ParkingPos[LogFile->FileContent.LogData[CurrParkedCars[i]].CarPos] = false;	//Mark the parking position as unoccupied
 			
 			//Calculate fee when the car is leaving
 			int				HourDifference;												//No. of hours between EnterTime and CurrTime
@@ -184,10 +194,19 @@ void btnEnterOrExit_Click() {
 	}
 
 	//No matched result, means the car is entering
-	//ToDo: allocate parking pos
-	labWelcome->SetText(L"Enter");
-	LogFile->AddLog(CarNumber, CurrTime, { 0 }, 10, 0);						//Add car enter log
-	CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);		//Add the log index to the parked cars list
+	//Allocate a car position
+	wchar_t			posStr[35];
+	for (int i = 0; i < 100; i++) {											//Find an unoccupied position
+		if (!ParkingPos[i]) {
+			ParkingPos[i] = true;												//Mark the position as occupied
+			wsprintf(posStr, L"Welcome! Your Car Position: %i", i);
+			labWelcome->SetText(posStr);										//Show the position for the user
+			LogFile->AddLog(CarNumber, CurrTime, { 0 }, i, 0);					//Add car enter log
+			CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);	//Add the log index to the parked cars list
+
+			break;
+		}
+	}
 
 	//Clean the window
 	edCarNumber->SetText(L"");
@@ -240,7 +259,7 @@ void MainWindow_Create(HWND hWnd) {
 	labCarNumber = make_shared<IceLabel>(hWnd, IDC_CARNUMBERLABEL);
 	labPrice = make_shared<IceLabel>(hWnd, IDC_PRICELABEL);
 	labTime = make_shared<IceLabel>(hWnd, IDC_SYSTEMTIMELABEL);
-	edCarNumber = make_shared<IceEdit>(hWnd, IDC_CARNUMBEREDIT, (WNDPROC)NULL);
+	edCarNumber = make_shared<IceEdit>(hWnd, IDC_CARNUMBEREDIT, CarNumberEditProc);
 	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
 	tmrRefreshTime = make_shared<IceTimer>(1000, tmrRefreshTime_Timer, true);
 	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
@@ -328,13 +347,17 @@ void mnuLog_Click() {
 		lvLog->SetItemText(i, buffer, 2);
 
 		//Leave time
-		wsprintf(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
-			LogFile->FileContent.LogData[i].LeaveTime.wYear,
-			LogFile->FileContent.LogData[i].LeaveTime.wMonth,
-			LogFile->FileContent.LogData[i].LeaveTime.wDay,
-			LogFile->FileContent.LogData[i].LeaveTime.wHour,
-			LogFile->FileContent.LogData[i].LeaveTime.wMinute,
-			LogFile->FileContent.LogData[i].LeaveTime.wSecond);
+		if (LogFile->FileContent.LogData[i].LeaveTime.wYear) {				//The car has left
+			wsprintf(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+				LogFile->FileContent.LogData[i].LeaveTime.wYear,
+				LogFile->FileContent.LogData[i].LeaveTime.wMonth,
+				LogFile->FileContent.LogData[i].LeaveTime.wDay,
+				LogFile->FileContent.LogData[i].LeaveTime.wHour,
+				LogFile->FileContent.LogData[i].LeaveTime.wMinute,
+				LogFile->FileContent.LogData[i].LeaveTime.wSecond);
+		}
+		else
+			lstrcpyW(buffer, L"Still Parking");
 		lvLog->SetItemText(i, buffer, 3);
 
 		//Car position
