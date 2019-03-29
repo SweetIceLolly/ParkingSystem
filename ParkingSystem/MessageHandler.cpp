@@ -16,7 +16,6 @@ This macro is only used in editbox procedures
 	if (uMsg == WM_GETDLGCODE)						\
 		return (DLGC_WANTALLKEYS |					\
 			CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam));
-	
 
 HINSTANCE	ProgramInstance;						//Instance of the program
 HWND		hwndMainWindow;							//Main window handle

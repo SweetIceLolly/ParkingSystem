@@ -102,7 +102,7 @@ Args:			CarNumber: Car number
 				Fee: Fee paid
 Return:			true if succeed, false otherwise
 */
-bool IceEncryptedFile::AddLog(wchar_t CarNumber[10], SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee) {
+bool IceEncryptedFile::AddLog(wchar_t CarNumber[10], SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, float Fee) {
 	if (fsFile.fail() || WithoutFile)															//No file opened
 		return false;
 
@@ -133,8 +133,8 @@ bool IceEncryptedFile::SaveFile() {
 	memcpy(Buffer.get(), FileContent.Password, sizeof(wchar_t) * 20);							//Password
 	memcpy(Buffer.get() + sizeof(wchar_t) * 20, &(FileContent.ElementCount), sizeof(UINT));		//Element count
 	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT),
-		&(FileContent.FeePerHour), sizeof(int));												//Fee per hour
-	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(int),
+		&(FileContent.FeePerHour), sizeof(float));												//Fee per hour
+	memcpy(Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(float),
 		FileContent.LogData.data(), sizeof(LogInfo) * FileContent.ElementCount);				//All log data
 	int KeyLen = lstrlenW(FileContent.Password);
 	if (KeyLen <= 0)																			//Check password length
@@ -176,11 +176,11 @@ bool IceEncryptedFile::ReadFile(wchar_t *Password) {
 		memcpy(FileContent.Password, Buffer.get(), sizeof(wchar_t) * 20);							//Password
 		memcpy(&(FileContent.ElementCount), Buffer.get() + sizeof(wchar_t) * 20, sizeof(UINT));		//Element count
 		memcpy(&(FileContent.FeePerHour),
-			Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT), sizeof(int));						//Fee per hour
+			Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT), sizeof(float));						//Fee per hour
 		FileContent.LogData.resize(FileContent.ElementCount);										//Allocate LogData elements
 		memcpy(FileContent.LogData.data(),
-			Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(int),
-			sizeof(LogInfo)* FileContent.ElementCount);												//All log data
+			Buffer.get() + sizeof(wchar_t) * 20 + sizeof(UINT) + sizeof(float),
+			sizeof(LogInfo) * FileContent.ElementCount);											//All log data
 		return true;
 	}
 	else {																						//Password unmatch

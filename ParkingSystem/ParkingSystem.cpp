@@ -11,6 +11,7 @@ File:           ParkingSystem.cpp
 shared_ptr<IceEncryptedFile>	LogFile;
 shared_ptr<IceEdit>				edPassword;
 shared_ptr<IceButton>			btnLogin;
+shared_ptr<IceButton>			btnCancelLogin;
 shared_ptr<IceListView>			lvLog;
 shared_ptr<IceLabel>			labPasswordIcon;
 shared_ptr<IceLabel>			labPassword;
@@ -26,6 +27,17 @@ shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome te
 
 vector<UINT>					CurrParkedCars;								//Cars currently parked, index of LogFile->FileContent.LogData
 bool							ParkingPos[100] = { 0 };					//Available parking positions (true = occupied)
+
+/*
+Program status identifier
+Value		Name				Description
+----------------------------------------------------------------------------------------------
+0			Normal mode			Initial status
+1			Payment mode		In payment mode, the program requires password to manage
+2			Log mode			Viewing log
+3			Unlocking mode		In payment mode, trying to unlock the program
+*/
+char							CurrStatus = 0;
 
 /*
 Description:    To handle main window resizing event
@@ -73,6 +85,7 @@ void btnLogin_Click() {
 
 		//Hide password frame
 		btnLogin->SetVisible(false);
+		btnCancelLogin->SetVisible(false);
 		edPassword->SetVisible(false);
 		labPasswordIcon->SetVisible(false);
 		labPassword->SetVisible(false);
@@ -171,14 +184,14 @@ void btnEnterOrExit_Click() {
 			if (CurrTime.wMinute > 0)													//Less than 1 hour = 1 hour
 				HourDifference++;
 
-			LogFile->FileContent.LogData[CurrParkedCars[i]].Fee = HourDifference * LogFile->FileContent.FeePerHour;
+			LogFile->FileContent.LogData[CurrParkedCars[i]].Fee = (float)HourDifference * LogFile->FileContent.FeePerHour;
 			if (HourDifference > 5)														//20% off for >5hrs parking
 				LogFile->FileContent.LogData[CurrParkedCars[i]].Fee *= 0.8;
 
 			//Display parking hours and fee
 			wchar_t			bufStr[45];
-			wsprintf(bufStr, L"Hours Parked: %ihr, Fee: $%i",
-				1, HourDifference, LogFile->FileContent.LogData[CurrParkedCars[i]].Fee);
+			swprintf_s(bufStr, L"Hours Parked: %ihr, Fee: $%.2f",
+				HourDifference, LogFile->FileContent.LogData[CurrParkedCars[i]].Fee);
 			labWelcome->SetText(bufStr);
 
 			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
@@ -199,7 +212,7 @@ void btnEnterOrExit_Click() {
 	for (int i = 0; i < 100; i++) {											//Find an unoccupied position
 		if (!ParkingPos[i]) {
 			ParkingPos[i] = true;												//Mark the position as occupied
-			wsprintf(posStr, L"Welcome! Your Car Position: %i", i);
+			swprintf_s(posStr, L"Welcome! Your Car Position: %i", i);
 			labWelcome->SetText(posStr);										//Show the position for the user
 			LogFile->AddLog(CarNumber, CurrTime, { 0 }, i, 0);					//Add car enter log
 			CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);	//Add the log index to the parked cars list
@@ -222,7 +235,7 @@ void tmrRefreshTime_Timer() {
 	SYSTEMTIME	st = { 0 };													//Retrieved system time
 
 	GetLocalTime(&st);														//Get current system time
-	wsprintf(TimeStr, L"Time: %04i-%02i-%02i %02i:%02i:%02i",
+	swprintf_s(TimeStr, L"Time: %04i-%02i-%02i %02i:%02i:%02i",
 		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);	//Make the string
 	labTime->SetText(TimeStr);
 }
@@ -251,6 +264,7 @@ void MainWindow_Create(HWND hWnd) {
 	//Bind controls with their corresponding classes
 	edPassword = make_shared<IceEdit>(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
+	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
@@ -294,14 +308,24 @@ void MainWindow_Create(HWND hWnd) {
 Description:	To handle Exit menu event
 */
 void mnuExit_Click() {
-	if (1)/*(MessageBox(GetMainWindowHandle(),
-		L"Exit Parking System?",
-		L"Confirm",
-		MB_YESNO | MB_ICONQUESTION) == IDYES)*/ {
+	if (CurrStatus == 1) {												//Payment mode
 
-		//Close the window and exit the program
-		DestroyWindow(GetMainWindowHandle());
-		PostQuitMessage(0);
+		CurrStatus = 2;
+	}
+	else if (CurrStatus == 2) {											//Unlocking mode
+
+		CurrStatus = 1;
+	}
+	else {																//Normal mode
+		if (1)/*(MessageBox(GetMainWindowHandle(),
+			L"Exit Parking System?",
+			L"Confirm",
+			MB_YESNO | MB_ICONQUESTION) == IDYES)*/ {
+
+			//Close the window and exit the program
+			DestroyWindow(GetMainWindowHandle());
+			PostQuitMessage(0);
+		}
 	}
 }
 
@@ -319,6 +343,7 @@ void mnuEnterPaymentMode_Click() {
 	btnEnterOrExit->SetVisible(true);
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	SetFocus(edCarNumber->hWnd);											//Set input focus to the car number textbox
+	CurrStatus = 1;															//Change status to payment mode
 }
 
 /*
@@ -337,7 +362,7 @@ void mnuLog_Click() {
 		lvLog->SetItemText(i, LogFile->FileContent.LogData[i].CarNumber, 1);
 
 		//Enter time
-		wsprintf(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+		swprintf_s(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
 			LogFile->FileContent.LogData[i].EnterTime.wYear,
 			LogFile->FileContent.LogData[i].EnterTime.wMonth,
 			LogFile->FileContent.LogData[i].EnterTime.wDay,
@@ -347,34 +372,34 @@ void mnuLog_Click() {
 		lvLog->SetItemText(i, buffer, 2);
 
 		//Leave time
-		if (LogFile->FileContent.LogData[i].LeaveTime.wYear) {				//The car has left
-			wsprintf(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+		if (LogFile->FileContent.LogData[i].LeaveTime.wYear) {					//The car has left
+			swprintf_s(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
 				LogFile->FileContent.LogData[i].LeaveTime.wYear,
 				LogFile->FileContent.LogData[i].LeaveTime.wMonth,
 				LogFile->FileContent.LogData[i].LeaveTime.wDay,
 				LogFile->FileContent.LogData[i].LeaveTime.wHour,
 				LogFile->FileContent.LogData[i].LeaveTime.wMinute,
 				LogFile->FileContent.LogData[i].LeaveTime.wSecond);
+			//Fee
+			swprintf_s(buffer, L"$%.2f", LogFile->FileContent.LogData[i].Fee);
+			lvLog->SetItemText(i, buffer, 5);
 		}
-		else
+		else																	//The car is still parking
 			lstrcpyW(buffer, L"Still Parking");
 		lvLog->SetItemText(i, buffer, 3);
 
 		//Car position
 		_itow_s(LogFile->FileContent.LogData[i].CarPos, buffer, 10);
 		lvLog->SetItemText(i, buffer, 4);
-
-		//Fee
-		wsprintf(buffer, L"$%u", LogFile->FileContent.LogData[i].Fee);
-		lvLog->SetItemText(i, buffer, 5);
 	}
+	CurrStatus = 2;															//Change status to log mode
 }
 
 /*
 Description:	To handle Options menu event
 */
 void mnuOptions_Click() {
-
+	
 }
 
 /*

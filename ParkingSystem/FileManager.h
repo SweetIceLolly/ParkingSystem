@@ -21,14 +21,14 @@ private:
 		SYSTEMTIME		EnterTime;						//Enter time of the car
 		SYSTEMTIME		LeaveTime;						//Leave time of the car. If the car is not left, LeaveTime.wYear = 0
 		int				CarPos;							//Parked position
-		int				Fee;							//Fee paid
+		float			Fee;							//Fee paid
 	};
 
 	/* Description:		Encrypted file structure */
 	struct RecordFile {
 		wchar_t			Password[20];					//User password
 		UINT			ElementCount;					//No. of elements of LogData
-		int				FeePerHour;						//Fee per hour
+		float			FeePerHour;						//Fee per hour
 		vector<LogInfo>	LogData;						//File content
 	};
 
@@ -39,7 +39,7 @@ public:
 
 	IceEncryptedFile(const wchar_t *FilePath);
 	~IceEncryptedFile();
-	bool AddLog(wchar_t *CarNumber, SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, int Fee);
+	bool AddLog(wchar_t *CarNumber, SYSTEMTIME EnterTime, SYSTEMTIME LeaveTime, int CarPos, float Fee);
 	bool SaveFile();
 	bool ReadFile(wchar_t *Password);
 };
