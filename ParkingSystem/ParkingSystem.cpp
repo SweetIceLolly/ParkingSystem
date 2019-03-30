@@ -78,53 +78,68 @@ void btnLogin_Click() {
 	static int	nTry = 2;													//Password attempted times
 	
 	edPassword->GetText(Password);
-	if (LogFile->ReadFile(Password) || LogFile->WithoutFile) {				//Password correct
-		//Change window style to sizable
-		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
-			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+	if (CurrStatus == 0) {													//Login to enter system
+		if (LogFile->ReadFile(Password) || LogFile->WithoutFile) {				//Password correct
+			//Change window style to sizable
+			SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
+				GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
 
-		//Hide password frame
-		btnLogin->SetVisible(false);
-		btnCancelLogin->SetVisible(false);
-		edPassword->SetVisible(false);
-		labPasswordIcon->SetVisible(false);
-		labPassword->SetVisible(false);
-		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
+			//Hide password frame
+			edPassword->SetText(L"");
+			btnLogin->SetVisible(false);
+			btnCancelLogin->SetVisible(false);
+			edPassword->SetVisible(false);
+			labPasswordIcon->SetVisible(false);
+			labPassword->SetVisible(false);
+			ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
 
-		//Show the main menu and welcome text
-		HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
-		SetMenu(GetMainWindowHandle(), hMenu);
-		DestroyMenu(hMenu);
+			//Show the main menu and welcome text
+			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
+			SetMenu(GetMainWindowHandle(), hMenu);
+			DestroyMenu(hMenu);
 
-		//Hide and show the window to apply new style
-		ShowWindow(GetMainWindowHandle(), SW_HIDE);
-		ShowWindow(GetMainWindowHandle(), SW_SHOW);
+			//Hide and show the window to apply new style
+			ShowWindow(GetMainWindowHandle(), SW_HIDE);
+			ShowWindow(GetMainWindowHandle(), SW_SHOW);
 
-		//Add parking cars to the list
-		for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
-			if (LogFile->FileContent.LogData[i].LeaveTime.wYear == 0) {			//If the car is not left
-				CurrParkedCars.push_back(i);										//Add it to the parked list
-				ParkingPos[LogFile->FileContent.LogData[i].CarPos] = true;			//Mark the parking position as occupied
+			//Add parking cars to the list
+			for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+				if (LogFile->FileContent.LogData[i].LeaveTime.wYear == 0) {			//If the car is not left
+					CurrParkedCars.push_back(i);										//Add it to the parked list
+					ParkingPos[LogFile->FileContent.LogData[i].CarPos] = true;			//Mark the parking position as occupied
+				}
+			}
+		}
+		else {																	//Password incorrect
+			if (nTry--) {
+				MessageBox(GetMainWindowHandle(),
+					L"Incorrect password! Please try again...",
+					L"Incorrect Password",
+					MB_ICONEXCLAMATION);
+				SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
+				SetFocus(edPassword->hWnd);
+			}
+			else {
+				MessageBox(GetMainWindowHandle(),
+					L"Too many incorrect password attempts! Exiting...",
+					L"Incorrect Password",
+					MB_ICONEXCLAMATION);
+				mnuExit_Click();
 			}
 		}
 	}
-	else {																	//Password incorrect
-		if (nTry--) {
-			MessageBox(GetMainWindowHandle(),
-				L"Incorrect password! Please try again...",
-				L"Incorrect Password",
-				MB_ICONEXCLAMATION);
-			SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
-			SetFocus(edPassword->hWnd);
-		}
-		else {
-			MessageBox(GetMainWindowHandle(),
-				L"Too many incorrect password attempts! Exiting...",
-				L"Incorrect Password",
-				MB_ICONEXCLAMATION);
-			mnuExit_Click();
+	else {																	//Login to exit payment mode
+		if (!lstrcmpW(Password, LogFile->FileContent.Password)) {				//Password correct
+
 		}
 	}
+}
+
+/*
+Description:	To handle login cancel button event
+*/
+void btnCancelLogin_Click() {
+	mnuExit_Click();
 }
 
 /*
@@ -264,7 +279,7 @@ void MainWindow_Create(HWND hWnd) {
 	//Bind controls with their corresponding classes
 	edPassword = make_shared<IceEdit>(hWnd, IDC_PASSWORDEDIT, PasswordEditProc);
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
-	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnCancelLogin_Click);
+	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
@@ -308,15 +323,50 @@ void MainWindow_Create(HWND hWnd) {
 Description:	To handle Exit menu event
 */
 void mnuExit_Click() {
-	if (CurrStatus == 1) {												//Payment mode
+	if (CurrStatus == 1) {												//Payment mode, user is trying to exit payment mode
+		//Show password frame
+		btnLogin->SetVisible(true);
+		btnCancelLogin->SetVisible(true);
+		edPassword->SetVisible(true);
+		labPasswordIcon->SetVisible(true);
+		labPassword->SetVisible(true);
+		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_SHOW);
 
-		CurrStatus = 2;
-	}
-	else if (CurrStatus == 2) {											//Unlocking mode
+		//Hide payment-related controls
+		labWelcome->SetVisible(false);
+		labPositionLeft->SetVisible(false);
+		labCarNumber->SetVisible(false);
+		labPrice->SetVisible(false);
+		labTime->SetVisible(false);
+		edCarNumber->SetVisible(false);
+		btnEnterOrExit->SetVisible(false);
 
-		CurrStatus = 1;
+		SetFocus(edPassword->hWnd);											//Let the password editbox has focus
+		CurrStatus = 2;														//Enter unlocking mode
 	}
-	else {																//Normal mode
+	else if (CurrStatus == 2) {											//Unlocking mode, user cancelled exiting payment mode
+		//Hide password frame
+		btnLogin->SetVisible(false);
+		btnCancelLogin->SetVisible(false);
+		edPassword->SetVisible(false);
+		labPasswordIcon->SetVisible(false);
+		labPassword->SetVisible(false);
+		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
+
+		//Show payment-related controls
+		labWelcome->SetVisible(true);
+		labPositionLeft->SetVisible(true);
+		labCarNumber->SetVisible(true);
+		labPrice->SetVisible(true);
+		labTime->SetVisible(true);
+		edCarNumber->SetVisible(true);
+		btnEnterOrExit->SetVisible(true);
+
+		SetFocus(edCarNumber->hWnd);										//Let the car number editbox has focus
+		CurrStatus = 1;														//Return to payment mode
+	}
+	else {																//Normal mode, user is goint to exit the system
+		//Show a prompt when exiting
 		if (1)/*(MessageBox(GetMainWindowHandle(),
 			L"Exit Parking System?",
 			L"Confirm",
