@@ -24,6 +24,7 @@ shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
 shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
+HWND							fraPasswordFrame;							//Password frame control handle
 
 vector<UINT>					CurrParkedCars;								//Cars currently parked, index of LogFile->FileContent.LogData
 bool							ParkingPos[100] = { 0 };					//Available parking positions (true = occupied)
@@ -40,11 +41,64 @@ Value		Name				Description
 char							CurrStatus = 0;
 
 /*
+Description:    Hide password-related controls
+*/
+void HidePasswordFrame() {
+	btnLogin->SetVisible(false);
+	btnCancelLogin->SetVisible(false);
+	edPassword->SetVisible(false);
+	labPasswordIcon->SetVisible(false);
+	labPassword->SetVisible(false);
+	ShowWindow(fraPasswordFrame, SW_HIDE);
+	
+	//Restore password field and prompt text
+	edPassword->SetText(L"");
+	labPassword->SetText(L"Enter system password:\n(Default: 123)");
+}
+
+/*
+Description:    Show password-related controls
+*/
+void ShowPasswordFrame() {
+	btnLogin->SetVisible(true);
+	btnCancelLogin->SetVisible(true);
+	edPassword->SetVisible(true);
+	labPasswordIcon->SetVisible(true);
+	labPassword->SetVisible(true);
+	ShowWindow(fraPasswordFrame, SW_SHOW);
+}
+
+/*
+Description:    Hide payment-related controls
+*/
+void HidePaymentFrame() {
+	labWelcome->SetVisible(false);
+	labPositionLeft->SetVisible(false);
+	labCarNumber->SetVisible(false);
+	labPrice->SetVisible(false);
+	labTime->SetVisible(false);
+	edCarNumber->SetVisible(false);
+	btnEnterOrExit->SetVisible(false);
+}
+
+/*
+Description:    Show payment-related controls
+*/
+void ShowPaymentFrame() {
+	labWelcome->SetVisible(true);
+	labPositionLeft->SetVisible(true);
+	labCarNumber->SetVisible(true);
+	labPrice->SetVisible(true);
+	labTime->SetVisible(true);
+	edCarNumber->SetVisible(true);
+	btnEnterOrExit->SetVisible(true);
+}
+
+/*
 Description:    To handle main window resizing event
 */
 void MainWindow_Resize(HWND hWnd, int Width, int Height) {
-	lvLog->Size(Width, Height);												//Change listview size
-	if (IsWindowVisible(labWelcome->hWnd)) {								//Payment mode
+	if (CurrStatus == 1) {													//Payment mode
 		//Change payment mode controls positions & sizes & fonts by ratio
 		labWelcome->Size(Width, Height / 3);									//Welcome label
 		labWelcome->SetFont(Width / 25, false);
@@ -66,6 +120,28 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		edCarNumber->Move(Width / 2.2, Height / 1.5);							//Car number editbox
 		edCarNumber->Size(Width / 3.5, Height / 12);
 		edCarNumber->SetFont(Width / 35, false);
+	}
+	else if (CurrStatus == 2) {												//Log viewing mode
+		lvLog->Size(Width, Height);												//Change listview size
+	}
+	else if (CurrStatus == 3) {												//Unlocking mode
+		//Change unlocking mode controls positions by ratio
+		RECT	PasswordFrameRect;
+		POINT	PasswordFramePos;
+		GetWindowRect(fraPasswordFrame, &PasswordFrameRect);					//Get password frame size
+		SetWindowPos(fraPasswordFrame, HWND_BOTTOM,
+			Width / 2 - (PasswordFrameRect.right - PasswordFrameRect.left) / 2,
+			Height / 2 - (PasswordFrameRect.bottom - PasswordFrameRect.top) / 2,
+			0, 0, SWP_NOSIZE);
+		GetWindowRect(fraPasswordFrame, &PasswordFrameRect);					//Get the new password frame position
+		PasswordFramePos.x = PasswordFrameRect.left;
+		PasswordFramePos.y = PasswordFrameRect.top;
+		ScreenToClient(GetMainWindowHandle(), &PasswordFramePos);				//Get appearant position of password frame
+		labPasswordIcon->Move(PasswordFramePos.x + 15, PasswordFramePos.y + 30);
+		labPassword->Move(PasswordFramePos.x + 60, PasswordFramePos.y + 30);
+		edPassword->Move(PasswordFramePos.x + 195, PasswordFramePos.y + 30);
+		btnLogin->Move(PasswordFramePos.x + 105, PasswordFramePos.y + 75);
+		btnCancelLogin->Move(PasswordFramePos.x + 190, PasswordFramePos.y + 75);
 	}
 }
 
@@ -91,9 +167,9 @@ void btnLogin_Click() {
 			edPassword->SetVisible(false);
 			labPasswordIcon->SetVisible(false);
 			labPassword->SetVisible(false);
-			ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
+			ShowWindow(fraPasswordFrame, SW_HIDE);
 
-			//Show the main menu and welcome text
+			//Show the main menu
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
 			SetMenu(GetMainWindowHandle(), hMenu);
 			DestroyMenu(hMenu);
@@ -111,7 +187,7 @@ void btnLogin_Click() {
 			}
 		}
 		else {																	//Password incorrect
-			if (nTry--) {
+			if (nTry--) {															//Decrease attempt times
 				MessageBox(GetMainWindowHandle(),
 					L"Incorrect password! Please try again...",
 					L"Incorrect Password",
@@ -119,7 +195,7 @@ void btnLogin_Click() {
 				SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
 				SetFocus(edPassword->hWnd);
 			}
-			else {
+			else {																	//Ran out of attempt times
 				MessageBox(GetMainWindowHandle(),
 					L"Too many incorrect password attempts! Exiting...",
 					L"Incorrect Password",
@@ -130,7 +206,36 @@ void btnLogin_Click() {
 	}
 	else {																	//Login to exit payment mode
 		if (!lstrcmpW(Password, LogFile->FileContent.Password)) {				//Password correct
+			HidePasswordFrame();
 
+			SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window sizable
+				GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+
+			//Show the main menu
+			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
+			SetMenu(GetMainWindowHandle(), hMenu);
+			DestroyMenu(hMenu);
+			CurrStatus = 0;
+		}
+		else {																	//Password incorrect
+			if (nTry--) {
+				labPassword->SetText(L"Incorrect password!\nTry again.");
+				SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
+				SetFocus(edPassword->hWnd);
+			}
+			else {
+				HidePasswordFrame();
+				ShowPaymentFrame();
+
+				SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window sizable
+					GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+
+				//Show login failed message
+				labWelcome->SetText(L"Failed to exit payment mode!");
+				tmrRestoreWelcomeText->SetEnabled(true);
+				SetFocus(edCarNumber->hWnd);
+				CurrStatus = 1;
+			}
 		}
 	}
 }
@@ -292,6 +397,7 @@ void MainWindow_Create(HWND hWnd) {
 	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
 	tmrRefreshTime = make_shared<IceTimer>(1000, tmrRefreshTime_Timer, true);
 	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
+	fraPasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
 	
 	//Set control properties
 	labWelcome->SetVisible(false);											//Hide unrelated controls
@@ -324,46 +430,34 @@ Description:	To handle Exit menu event
 */
 void mnuExit_Click() {
 	if (CurrStatus == 1) {												//Payment mode, user is trying to exit payment mode
-		//Show password frame
-		btnLogin->SetVisible(true);
-		btnCancelLogin->SetVisible(true);
-		edPassword->SetVisible(true);
-		labPasswordIcon->SetVisible(true);
-		labPassword->SetVisible(true);
-		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_SHOW);
+		ShowPasswordFrame();
+		HidePaymentFrame();
+		CurrStatus = 3;														//Enter unlocking mode
 
-		//Hide payment-related controls
-		labWelcome->SetVisible(false);
-		labPositionLeft->SetVisible(false);
-		labCarNumber->SetVisible(false);
-		labPrice->SetVisible(false);
-		labTime->SetVisible(false);
-		edCarNumber->SetVisible(false);
-		btnEnterOrExit->SetVisible(false);
+		RECT	MainWindowSize;
+		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window not sizable
+			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX);
+		GetClientRect(GetMainWindowHandle(), &MainWindowSize);				//Get window size
+		MainWindow_Resize(GetMainWindowHandle(),
+			MainWindowSize.right - MainWindowSize.left,
+			MainWindowSize.bottom - MainWindowSize.top);					//Invoke window resize event to center password frame
 
 		SetFocus(edPassword->hWnd);											//Let the password editbox has focus
-		CurrStatus = 2;														//Enter unlocking mode
 	}
-	else if (CurrStatus == 2) {											//Unlocking mode, user cancelled exiting payment mode
-		//Hide password frame
-		btnLogin->SetVisible(false);
-		btnCancelLogin->SetVisible(false);
-		edPassword->SetVisible(false);
-		labPasswordIcon->SetVisible(false);
-		labPassword->SetVisible(false);
-		ShowWindow(GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME), SW_HIDE);
+	else if (CurrStatus == 3) {											//Unlocking mode, user cancelled exiting payment mode
+		HidePasswordFrame();
+		ShowPaymentFrame();
+		CurrStatus = 1;														//Return to payment mode
 
-		//Show payment-related controls
-		labWelcome->SetVisible(true);
-		labPositionLeft->SetVisible(true);
-		labCarNumber->SetVisible(true);
-		labPrice->SetVisible(true);
-		labTime->SetVisible(true);
-		edCarNumber->SetVisible(true);
-		btnEnterOrExit->SetVisible(true);
+		RECT	MainWindowSize;
+		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window sizable
+			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+		GetClientRect(GetMainWindowHandle(), &MainWindowSize);				//Get window size
+		MainWindow_Resize(GetMainWindowHandle(),
+			MainWindowSize.right - MainWindowSize.left,
+			MainWindowSize.bottom - MainWindowSize.top);					//Invoke window resize event to resize payment controls
 
 		SetFocus(edCarNumber->hWnd);										//Let the car number editbox has focus
-		CurrStatus = 1;														//Return to payment mode
 	}
 	else {																//Normal mode, user is goint to exit the system
 		//Show a prompt when exiting
@@ -384,16 +478,16 @@ Description:	To handle Enter Payment Mode menu event
 */
 void mnuEnterPaymentMode_Click() {
 	lvLog->SetVisible(false);												//Hide unrelated controls
-	labWelcome->SetVisible(true);											//Show payment-related controls
-	labPositionLeft->SetVisible(true);
-	labCarNumber->SetVisible(true);
-	labPrice->SetVisible(true);
-	labTime->SetVisible(true);
-	edCarNumber->SetVisible(true);
-	btnEnterOrExit->SetVisible(true);
+	ShowPaymentFrame();
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	SetFocus(edCarNumber->hWnd);											//Set input focus to the car number textbox
 	CurrStatus = 1;															//Change status to payment mode
+	
+	RECT	MainWindowSize;
+	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
+	MainWindow_Resize(GetMainWindowHandle(),
+		MainWindowSize.right - MainWindowSize.left,
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to center password frame
 }
 
 /*
@@ -402,7 +496,7 @@ Description:	To handle Show Log menu event
 void mnuLog_Click() {
 	wchar_t buffer[20];
 
-	lvLog->SetVisible(true);												//Show log listview
+	lvLog->DeleteAllItems();												//Clear log listview
 	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {			//Add all log info to the listview
 		//Index
 		_itow_s(i + 1, buffer, 10);													
@@ -442,6 +536,7 @@ void mnuLog_Click() {
 		_itow_s(LogFile->FileContent.LogData[i].CarPos, buffer, 10);
 		lvLog->SetItemText(i, buffer, 4);
 	}
+	lvLog->SetVisible(true);												//Show log listview
 	CurrStatus = 2;															//Change status to log mode
 }
 

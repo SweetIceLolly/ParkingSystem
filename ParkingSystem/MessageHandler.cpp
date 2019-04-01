@@ -274,6 +274,13 @@ LRESULT IceListView::SetItemText(int Index, wchar_t *Text, int SubItemIndex = 0)
 	return SendMessage(hWnd, LVM_SETITEMTEXT, Index, (LPARAM)&lvi);
 }
 
+/*
+Description:    Clear all list items in the listview
+*/
+void IceListView::DeleteAllItems() {
+	SendMessage(hWnd, LVM_DELETEALLITEMS, 0, 0);
+}
+
 //============================================================================
 /*
 Description:    This copys hInstance to ProgramInstance

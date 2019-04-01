@@ -108,4 +108,5 @@ public:
 	LRESULT AddColumn(wchar_t *Text, int Width = 100, int Index = -1);
 	LRESULT AddItem(wchar_t *Text, int Index = -1);
 	LRESULT SetItemText(int Index, wchar_t *Text, int SubItemIndex);
+	void DeleteAllItems();
 };

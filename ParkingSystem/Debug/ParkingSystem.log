@@ -1,9 +1,13 @@
-﻿Build started 3/30/2019 11:48:58 AM.
-     1>Project "C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" on node 2 (Build target(s)).
-     1>Link:
-         ParkingSystem.vcxproj -> C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\Debug\ParkingSystem.exe
-     1>Done Building Project "C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" (Build target(s)).
-
-Build succeeded.
-
-Time Elapsed 00:00:00.03
+﻿  ParkingSystem.cpp
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(105): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(108): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(111): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(112): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(114): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(115): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(117): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(118): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(120): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(121): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(309): warning C4305: '*=' : truncation from 'double' to 'float'
+  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe
