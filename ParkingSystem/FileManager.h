@@ -6,9 +6,6 @@ File:           FileManager.h
 */
 
 #include "MessageHandler.h"
-#include <fstream>
-#include <vector>
-#include <memory>
 
 using namespace std;
 

@@ -142,14 +142,6 @@ IceLabel::IceLabel(HWND ParentHwnd, int CtlID) {
 	GetWindowRect(hWnd, &CtlRect);
 }
 
-/*
-Description:    Set the caption of the label control
-Args:           Caption: New caption
-*/
-void IceLabel::SetText(wchar_t *Text) {
-	SetWindowText(hWnd, Text);
-}
-
 //============================================================================
 /*
 Description:    Constructor of the button control
@@ -186,8 +178,8 @@ IceEdit::IceEdit(HWND ParentHwnd, int CtlID, WNDPROC Proc) {
 }
 
 /*
-Description:    Set the caption of the button control
-Args:           Caption: New caption
+Description:    Set the text of the button control
+Args:           Caption: New text
 */
 void IceEdit::SetText(wchar_t *Text) {
 	SetWindowText(hWnd, Text);

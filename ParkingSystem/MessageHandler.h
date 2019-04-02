@@ -7,6 +7,9 @@ File:           MessageHandler.h
 
 #include <Windows.h>
 #include <CommCtrl.h>
+#include <fstream>
+#include <vector>
+#include <memory>
 #include "resource.h"
 
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
@@ -81,7 +84,7 @@ public:
 class IceLabel : public BasicCtl {
 public:
 	IceLabel(HWND ParentHwnd, int CtlID);
-	void SetText(wchar_t *Text);
+	template<class ...Args> void SetText(const wchar_t *Text, Args&&... rest);
 };
 
 /* Description:		Button control class */
@@ -110,3 +113,15 @@ public:
 	LRESULT SetItemText(int Index, wchar_t *Text, int SubItemIndex);
 	void DeleteAllItems();
 };
+
+/*
+Description:    Set the caption of the label control
+Args:           Text: Format string of new caption
+				rest: String parameters
+*/
+template<class ...Args>
+void IceLabel::SetText(const wchar_t *Text, Args&&... rest) {
+	wchar_t buf[255];
+	swprintf_s(buf, Text, std::forward<Args>(rest)...);
+	SetWindowText(hWnd, buf);
+}

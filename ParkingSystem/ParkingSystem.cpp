@@ -309,13 +309,13 @@ void btnEnterOrExit_Click() {
 				LogFile->FileContent.LogData[CurrParkedCars[i]].Fee *= 0.8;
 
 			//Display parking hours and fee
-			wchar_t			bufStr[45];
-			swprintf_s(bufStr, L"Hours Parked: %ihr, Fee: $%.2f",
+			labWelcome->SetText(L"Hours Parked: %ihr, Fee: $%.2f",
 				HourDifference, LogFile->FileContent.LogData[CurrParkedCars[i]].Fee);
-			labWelcome->SetText(bufStr);
 
 			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
 			LogFile->SaveFile();
+
+			//labPositionLeft->SetText(bufStr);
 
 			//Clean the window
 			edCarNumber->SetText(L"");
@@ -328,12 +328,10 @@ void btnEnterOrExit_Click() {
 
 	//No matched result, means the car is entering
 	//Allocate a car position
-	wchar_t			posStr[35];
 	for (int i = 0; i < 100; i++) {											//Find an unoccupied position
 		if (!ParkingPos[i]) {
 			ParkingPos[i] = true;												//Mark the position as occupied
-			swprintf_s(posStr, L"Welcome! Your Car Position: %i", i);
-			labWelcome->SetText(posStr);										//Show the position for the user
+			labWelcome->SetText(L"Welcome! Your Car Position: %i", i);			//Show the position for the user
 			LogFile->AddLog(CarNumber, CurrTime, { 0 }, i, 0);					//Add car enter log
 			CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);	//Add the log index to the parked cars list
 
@@ -351,13 +349,11 @@ void btnEnterOrExit_Click() {
 Description:	Refresh system time
 */
 void tmrRefreshTime_Timer() {
-	wchar_t		TimeStr[30];												//String buffer
 	SYSTEMTIME	st = { 0 };													//Retrieved system time
 
 	GetLocalTime(&st);														//Get current system time
-	swprintf_s(TimeStr, L"Time: %04i-%02i-%02i %02i:%02i:%02i",
-		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);	//Make the string
-	labTime->SetText(TimeStr);
+	labTime->SetText(L"Time: %04i-%02i-%02i %02i:%02i:%02i",
+		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
 }
 
 /*
@@ -365,7 +361,7 @@ Description:	Restore welome text few seconds after a car leaves
 */
 void tmrRestoreWelcomeText_Timer() {
 	labWelcome->SetText(L"Welcome to Shar Carpark!");						//Restore the welcome text
-	tmrRestoreWelcomeText->SetEnabled(false);									//Disable the timer
+	tmrRestoreWelcomeText->SetEnabled(false);								//Disable the timer
 }
 
 /*
