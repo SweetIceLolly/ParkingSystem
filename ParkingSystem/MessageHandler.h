@@ -84,7 +84,7 @@ public:
 class IceLabel : public BasicCtl {
 public:
 	IceLabel(HWND ParentHwnd, int CtlID);
-	template<class ...Args> void SetText(const wchar_t *Text, Args&&... rest);
+	template<class ...Args> void SetText(const wchar_t *FormatString, Args&&... FormatParams);
 };
 
 /* Description:		Button control class */
@@ -109,19 +109,63 @@ class IceListView : public BasicCtl {
 public:
 	IceListView(HWND ParentHwnd, int CtlID);
 	LRESULT AddColumn(wchar_t *Text, int Width = 100, int Index = -1);
-	LRESULT AddItem(wchar_t *Text, int Index = -1);
-	LRESULT SetItemText(int Index, wchar_t *Text, int SubItemIndex);
+	template<class ...Args> LRESULT AddItem(const wchar_t *FormatString, int Index = -1, Args&&... FormatParams);
+	template<class ...Args> LRESULT SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex = 0, Args&&... FormatParams);
 	void DeleteAllItems();
 };
 
 /*
 Description:    Set the caption of the label control
-Args:           Text: Format string of new caption
-				rest: String parameters
+Args:           FormatString: Format string of new caption
+				FormatParams: String parameters
 */
 template<class ...Args>
-void IceLabel::SetText(const wchar_t *Text, Args&&... rest) {
+void IceLabel::SetText(const wchar_t *FormatString, Args&&... FormatParams) {
 	wchar_t buf[255];
-	swprintf_s(buf, Text, std::forward<Args>(rest)...);
+	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
 	SetWindowText(hWnd, buf);
+}
+
+/*
+Description:    Set the text of an existing item
+Args:           Index: The index of the item
+				FormatString: Format string of new caption
+				SubItemIndex: The index of the subitem of the specified item. 0 means the main item. Default = 0
+				FormatParams: String parameters
+Return:			TRUE if successful, or FALSE otherwise
+*/
+template<class ...Args>
+LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
+	LVITEM		lvi;																			//Listview item info
+	wchar_t		buf[255];
+
+	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
+	lvi.iSubItem = SubItemIndex;
+	lvi.mask = LVIF_TEXT;																		//Specific text
+	lvi.cchTextMax = lstrlenW(buf);
+	lvi.pszText = buf;
+	return SendMessage(hWnd, LVM_SETITEMTEXT, Index, (LPARAM)&lvi);
+}
+
+/*
+Description:    Add a new list item to the listview
+Args:           FormatString: The text of the new item
+				Index: The index of the new column. -1 means at the end of the list. Default = -1
+				FormatParams: String parameters
+Return:			Index to of the new item if successful, or -1 otherwise
+*/
+template<class ...Args>
+LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... FormatParams) {
+	LVITEM		lvi = { 0 };																	//Listview item info
+	wchar_t		buf[255];
+
+	if (Index == -1)																			//Add the item to the end
+		lvi.iItem = SendMessage(hWnd, LVM_GETITEMCOUNT, 0, 0);
+	else																						//Add the item to the specified index
+		lvi.iItem = Index;
+	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
+	lvi.mask = LVIF_TEXT;																		//Specific text
+	lvi.cchTextMax = lstrlenW(buf);
+	lvi.pszText = buf;
+	return SendMessage(hWnd, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 }

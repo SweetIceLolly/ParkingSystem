@@ -232,41 +232,6 @@ LRESULT IceListView::AddColumn(wchar_t *Text, int Width, int Index) {
 }
 
 /*
-Description:    Add a new list item to the listview
-Args:           Text: The text of the new item
-				Index: The index of the new column. -1 means at the end of the list. Default = -1
-Return:			Index to of the new item if successful, or -1 otherwise
-*/
-LRESULT IceListView::AddItem(wchar_t *Text, int Index) {
-	LVITEM		lvi = { 0 };																	//Listview item info
-
-	if (Index == -1)																			//Add the item to the end
-		lvi.iItem = SendMessage(hWnd, LVM_GETITEMCOUNT, 0, 0);
-	else																						//Add the item to the specified index
-		lvi.iItem = Index;
-	lvi.mask = LVIF_TEXT;																		//Specific text
-	lvi.cchTextMax = lstrlenW(Text);
-	lvi.pszText = Text;
-	return SendMessage(hWnd, LVM_INSERTITEM, 0, (LPARAM)&lvi);
-}
-
-/*
-Description:    Set the text of an existing item
-Args:           Index: The index of the item
-				SubItemIndex: The index of the subitem of the specified item. 0 means the main item. Default = 0
-Return:			TRUE if successful, or FALSE otherwise
-*/
-LRESULT IceListView::SetItemText(int Index, wchar_t *Text, int SubItemIndex = 0) {
-	LVITEM		lvi;																			//Listview item info
-
-	lvi.iSubItem = SubItemIndex;
-	lvi.mask = LVIF_TEXT;																		//Specific text
-	lvi.cchTextMax = lstrlenW(Text);
-	lvi.pszText = Text;
-	return SendMessage(hWnd, LVM_SETITEMTEXT, Index, (LPARAM)&lvi);
-}
-
-/*
 Description:    Clear all list items in the listview
 */
 void IceListView::DeleteAllItems() {
@@ -371,8 +336,12 @@ LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	EDIT_PROC_DEFAULT_OPERATION
 	
 	if(uMsg == WM_CHAR) {														//Key pressed message
-		if (wParam == VK_RETURN) {
+		if (wParam == VK_RETURN) {													//Enter key
 			btnLogin_Click();
+			return 0;
+		}
+		else if (wParam == VK_ESCAPE) {												//Esc key
+			mnuExit_Click();
 			return 0;
 		}
 	}
@@ -392,7 +361,7 @@ LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 	EDIT_PROC_DEFAULT_OPERATION
 	
 	if(uMsg == WM_CHAR) {													//Key pressed message
-		if (wParam == VK_RETURN) {
+		if (wParam == VK_RETURN) {												//Enter key
 			btnEnterOrExit_Click();
 			return 0;
 		}
@@ -400,11 +369,11 @@ LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			(wParam > 'Z' || wParam < 'A') &&
 			(wParam > '9' || wParam < '0') &&
 			(wParam != VK_DELETE) &&
-			(wParam != VK_BACK))													//Accept numbers, letters and delete keys only, reject other characters
+			(wParam != VK_BACK))												//Accept numbers, letters and delete keys only, reject other characters
 
 			return 0;
 	}
-	else if (uMsg == WM_PASTE)													//Block paste message
+	else if (uMsg == WM_PASTE)												//Block paste message
 		return 0;
 
 	//Call the default window prodecure of the editbpx

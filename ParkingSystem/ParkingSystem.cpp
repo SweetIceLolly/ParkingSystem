@@ -98,7 +98,9 @@ void ShowPaymentFrame() {
 Description:    To handle main window resizing event
 */
 void MainWindow_Resize(HWND hWnd, int Width, int Height) {
-	if (CurrStatus == 1) {													//Payment mode
+	//For initial status, resize all controls
+	//That's why I don't add 'else' before 'if'
+	if (CurrStatus == 1 || CurrStatus == 0) {								//Payment mode
 		//Change payment mode controls positions & sizes & fonts by ratio
 		labWelcome->Size(Width, Height / 3);									//Welcome label
 		labWelcome->SetFont(Width / 25, false);
@@ -121,10 +123,9 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		edCarNumber->Size(Width / 3.5, Height / 12);
 		edCarNumber->SetFont(Width / 35, false);
 	}
-	else if (CurrStatus == 2) {												//Log viewing mode
+	if (CurrStatus == 2 || CurrStatus == 0)									//Log viewing mode
 		lvLog->Size(Width, Height);												//Change listview size
-	}
-	else if (CurrStatus == 3) {												//Unlocking mode
+	if (CurrStatus == 3 || CurrStatus == 0) {								//Unlocking mode
 		//Change unlocking mode controls positions by ratio
 		RECT	PasswordFrameRect;
 		POINT	PasswordFramePos;
@@ -185,6 +186,7 @@ void btnLogin_Click() {
 					ParkingPos[LogFile->FileContent.LogData[i].CarPos] = true;			//Mark the parking position as occupied
 				}
 			}
+			//ToDo: Calc position left
 		}
 		else {																	//Password incorrect
 			if (nTry--) {															//Decrease attempt times
@@ -314,8 +316,7 @@ void btnEnterOrExit_Click() {
 
 			CurrParkedCars.erase(CurrParkedCars.begin() + i);							//Remove the car from the parked cars list
 			LogFile->SaveFile();
-
-			//labPositionLeft->SetText(bufStr);
+			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
 
 			//Clean the window
 			edCarNumber->SetText(L"");
@@ -334,6 +335,7 @@ void btnEnterOrExit_Click() {
 			labWelcome->SetText(L"Welcome! Your Car Position: %i", i);			//Show the position for the user
 			LogFile->AddLog(CarNumber, CurrTime, { 0 }, i, 0);					//Add car enter log
 			CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);	//Add the log index to the parked cars list
+			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
 
 			break;
 		}
@@ -445,19 +447,13 @@ void mnuExit_Click() {
 		ShowPaymentFrame();
 		CurrStatus = 1;														//Return to payment mode
 
-		RECT	MainWindowSize;
 		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window sizable
 			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
-		GetClientRect(GetMainWindowHandle(), &MainWindowSize);				//Get window size
-		MainWindow_Resize(GetMainWindowHandle(),
-			MainWindowSize.right - MainWindowSize.left,
-			MainWindowSize.bottom - MainWindowSize.top);					//Invoke window resize event to resize payment controls
-
 		SetFocus(edCarNumber->hWnd);										//Let the car number editbox has focus
 	}
 	else {																//Normal mode, user is goint to exit the system
 		//Show a prompt when exiting
-		if (1)/*(MessageBox(GetMainWindowHandle(),
+		if (1)/*ToDo: uncomment (MessageBox(GetMainWindowHandle(),
 			L"Exit Parking System?",
 			L"Confirm",
 			MB_YESNO | MB_ICONQUESTION) == IDYES)*/ {
@@ -478,59 +474,54 @@ void mnuEnterPaymentMode_Click() {
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	SetFocus(edCarNumber->hWnd);											//Set input focus to the car number textbox
 	CurrStatus = 1;															//Change status to payment mode
-	
+
 	RECT	MainWindowSize;
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
-		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to center password frame
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize payment controls
 }
 
 /*
 Description:	To handle Show Log menu event
 */
 void mnuLog_Click() {
-	wchar_t buffer[20];
 
 	lvLog->DeleteAllItems();												//Clear log listview
 	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {			//Add all log info to the listview
 		//Index
-		_itow_s(i + 1, buffer, 10);													
-		lvLog->AddItem(buffer);
+		lvLog->AddItem(L"%i", -1, i + 1);
 
 		//Car number
 		lvLog->SetItemText(i, LogFile->FileContent.LogData[i].CarNumber, 1);
 
 		//Enter time
-		swprintf_s(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+		lvLog->SetItemText(i, L"%04u-%02u-%02u %02u:%02u:%02u", 2,
 			LogFile->FileContent.LogData[i].EnterTime.wYear,
 			LogFile->FileContent.LogData[i].EnterTime.wMonth,
 			LogFile->FileContent.LogData[i].EnterTime.wDay,
 			LogFile->FileContent.LogData[i].EnterTime.wHour,
 			LogFile->FileContent.LogData[i].EnterTime.wMinute,
 			LogFile->FileContent.LogData[i].EnterTime.wSecond);
-		lvLog->SetItemText(i, buffer, 2);
 
-		//Leave time
 		if (LogFile->FileContent.LogData[i].LeaveTime.wYear) {					//The car has left
-			swprintf_s(buffer, L"%04u-%02u-%02u %02u:%02u:%02u",
+			//Leave time
+			lvLog->SetItemText(i, L"%04u-%02u-%02u %02u:%02u:%02u", 3,
 				LogFile->FileContent.LogData[i].LeaveTime.wYear,
 				LogFile->FileContent.LogData[i].LeaveTime.wMonth,
 				LogFile->FileContent.LogData[i].LeaveTime.wDay,
 				LogFile->FileContent.LogData[i].LeaveTime.wHour,
 				LogFile->FileContent.LogData[i].LeaveTime.wMinute,
 				LogFile->FileContent.LogData[i].LeaveTime.wSecond);
+
 			//Fee
-			swprintf_s(buffer, L"$%.2f", LogFile->FileContent.LogData[i].Fee);
-			lvLog->SetItemText(i, buffer, 5);
+			lvLog->SetItemText(i, L"$%.2f", 5, LogFile->FileContent.LogData[i].Fee);
 		}
 		else																	//The car is still parking
-			lstrcpyW(buffer, L"Still Parking");
-		lvLog->SetItemText(i, buffer, 3);
+			lvLog->SetItemText(i, L"Still Parking", 3);
 
 		//Car position
-		_itow_s(LogFile->FileContent.LogData[i].CarPos, buffer, 10);
-		lvLog->SetItemText(i, buffer, 4);
+		lvLog->SetItemText(i, L"%i", 4, LogFile->FileContent.LogData[i].CarPos);
 	}
 	lvLog->SetVisible(true);												//Show log listview
 	CurrStatus = 2;															//Change status to log mode
