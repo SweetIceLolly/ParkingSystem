@@ -186,7 +186,7 @@ void btnLogin_Click() {
 					ParkingPos[LogFile->FileContent.LogData[i].CarPos] = true;			//Mark the parking position as occupied
 				}
 			}
-			//ToDo: Calc position left
+			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
 		}
 		else {																	//Password incorrect
 			if (nTry--) {															//Decrease attempt times
@@ -424,6 +424,13 @@ void MainWindow_Create(HWND hWnd) {
 }
 
 /*
+Description:	To lock the system
+*/
+void mnuLock_Click() {
+
+}
+
+/*
 Description:	To handle Exit menu event
 */
 void mnuExit_Click() {
@@ -479,14 +486,13 @@ void mnuEnterPaymentMode_Click() {
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
-		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize payment controls
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize log listview
 }
 
 /*
 Description:	To handle Show Log menu event
 */
 void mnuLog_Click() {
-
 	lvLog->DeleteAllItems();												//Clear log listview
 	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {			//Add all log info to the listview
 		//Index
@@ -525,6 +531,12 @@ void mnuLog_Click() {
 	}
 	lvLog->SetVisible(true);												//Show log listview
 	CurrStatus = 2;															//Change status to log mode
+
+	RECT	MainWindowSize;
+	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
+	MainWindow_Resize(GetMainWindowHandle(),
+		MainWindowSize.right - MainWindowSize.left,
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to center password frame
 }
 
 /*

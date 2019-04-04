@@ -292,7 +292,11 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				switch (LOWORD(wParam)) {													//Get menu ID
 				case ID_FILE_PARKINGLOG:														//Show parking log
 					mnuLog_Click();
-					break; 
+					break;
+
+				case ID_FILE_LOCKSYSTEM:														//Lock system
+					mnuLock_Click();
+					break;
 				
 				case ID_FILE_EXITSYSTEM:														//Exit system
 					mnuExit_Click();
