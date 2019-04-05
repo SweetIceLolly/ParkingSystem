@@ -13,6 +13,7 @@ shared_ptr<IceEdit>				edPassword;
 shared_ptr<IceButton>			btnLogin;
 shared_ptr<IceButton>			btnCancelLogin;
 shared_ptr<IceListView>			lvLog;
+shared_ptr<IceTab>				tabReport;
 shared_ptr<IceLabel>			labPasswordIcon;
 shared_ptr<IceLabel>			labPassword;
 shared_ptr<IceLabel>			labWelcome;
@@ -37,8 +38,10 @@ Value		Name				Description
 1			Payment mode		In payment mode, the program requires password to manage
 2			Log mode			Viewing log
 3			Unlocking mode		In payment mode, trying to unlock the program
+4			Locked				System locked, requires password to manage
 */
 char							CurrStatus = 0;
+char							nPasswordTried;								//Password attempt times left
 
 /*
 Description:    Hide password-related controls
@@ -54,18 +57,25 @@ void HidePasswordFrame() {
 	//Restore password field and prompt text
 	edPassword->SetText(L"");
 	labPassword->SetText(L"Enter system password:\n(Default: 123)");
+
+	SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window sizable
+		GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
 }
 
 /*
 Description:    Show password-related controls
 */
 void ShowPasswordFrame() {
+	nPasswordTried = 2;														//Restore password attempt times
 	btnLogin->SetVisible(true);
 	btnCancelLogin->SetVisible(true);
 	edPassword->SetVisible(true);
 	labPasswordIcon->SetVisible(true);
 	labPassword->SetVisible(true);
 	ShowWindow(fraPasswordFrame, SW_SHOW);
+
+	SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window not sizable
+		GetWindowLong(GetMainWindowHandle(), GWL_STYLE) & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX);
 }
 
 /*
@@ -152,23 +162,11 @@ Description:	To handle login button event
 void btnLogin_Click() {
 	//Try to decrypt the file
 	wchar_t		Password[20];
-	static int	nTry = 2;													//Password attempted times
 	
 	edPassword->GetText(Password);
 	if (CurrStatus == 0) {													//Login to enter system
 		if (LogFile->ReadFile(Password) || LogFile->WithoutFile) {				//Password correct
-			//Change window style to sizable
-			SetWindowLong(GetMainWindowHandle(), GWL_STYLE,
-				GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
-
-			//Hide password frame
-			edPassword->SetText(L"");
-			btnLogin->SetVisible(false);
-			btnCancelLogin->SetVisible(false);
-			edPassword->SetVisible(false);
-			labPasswordIcon->SetVisible(false);
-			labPassword->SetVisible(false);
-			ShowWindow(fraPasswordFrame, SW_HIDE);
+			HidePasswordFrame();
 
 			//Show the main menu
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
@@ -189,7 +187,7 @@ void btnLogin_Click() {
 			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
 		}
 		else {																	//Password incorrect
-			if (nTry--) {															//Decrease attempt times
+			if (nPasswordTried--) {														//Decrease attempt times
 				MessageBox(GetMainWindowHandle(),
 					L"Incorrect password! Please try again...",
 					L"Incorrect Password",
@@ -206,12 +204,9 @@ void btnLogin_Click() {
 			}
 		}
 	}
-	else {																	//Login to exit payment mode
+	else if (CurrStatus == 3) {												//Login to exit payment mode
 		if (!lstrcmpW(Password, LogFile->FileContent.Password)) {				//Password correct
 			HidePasswordFrame();
-
-			SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window sizable
-				GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
 
 			//Show the main menu
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
@@ -220,7 +215,7 @@ void btnLogin_Click() {
 			CurrStatus = 0;
 		}
 		else {																	//Password incorrect
-			if (nTry--) {
+			if (nPasswordTried--) {
 				labPassword->SetText(L"Incorrect password!\nTry again.");
 				SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
 				SetFocus(edPassword->hWnd);
@@ -229,15 +224,28 @@ void btnLogin_Click() {
 				HidePasswordFrame();
 				ShowPaymentFrame();
 
-				SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window sizable
-					GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
-
 				//Show login failed message
 				labWelcome->SetText(L"Failed to exit payment mode!");
 				tmrRestoreWelcomeText->SetEnabled(true);
 				SetFocus(edCarNumber->hWnd);
 				CurrStatus = 1;
 			}
+		}
+	}
+	else if (CurrStatus == 4) {												//Login to unlock the system
+		if (!lstrcmpW(Password, LogFile->FileContent.Password)) {				//Password correct
+			HidePasswordFrame();
+
+			//Show the main menu
+			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
+			SetMenu(GetMainWindowHandle(), hMenu);
+			DestroyMenu(hMenu);
+			CurrStatus = 0;
+		}
+		else {																	//Password incorrect
+			labPassword->SetText(L"Incorrect password!\nTry again.");
+			SendMessage(edPassword->hWnd, EM_SETSEL, 0, -1);						//Select all text in the textbox
+			SetFocus(edPassword->hWnd);
 		}
 	}
 }
@@ -384,6 +392,7 @@ void MainWindow_Create(HWND hWnd) {
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
 	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
+	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, (TabSelectionEvent)NULL);
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
 	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
@@ -407,6 +416,7 @@ void MainWindow_Create(HWND hWnd) {
 	btnEnterOrExit->SetVisible(false);
 	labWelcome->Move(0, 20);												//Set the position of welcome label
 	lvLog->Move(0, 0);														//Set the position of listview
+	tabReport->Move(0, 0);													//Set the position of report tab
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max length of password editbox
 	SendMessage(edCarNumber->hWnd, EM_SETLIMITTEXT, 10, 0);					//Max length of car number editbox
 	lvLog->AddColumn(L"#", 40);												//Add columns to log listview
@@ -427,7 +437,11 @@ void MainWindow_Create(HWND hWnd) {
 Description:	To lock the system
 */
 void mnuLock_Click() {
-
+	CurrStatus = 4;															//Change status to locked mode
+	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
+	lvLog->SetVisible(false);												//Hide unrelated controls
+	ShowPasswordFrame();
+	SetFocus(edPassword->hWnd);
 }
 
 /*
@@ -440,8 +454,6 @@ void mnuExit_Click() {
 		CurrStatus = 3;														//Enter unlocking mode
 
 		RECT	MainWindowSize;
-		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window not sizable
-			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX);
 		GetClientRect(GetMainWindowHandle(), &MainWindowSize);				//Get window size
 		MainWindow_Resize(GetMainWindowHandle(),
 			MainWindowSize.right - MainWindowSize.left,
@@ -454,10 +466,10 @@ void mnuExit_Click() {
 		ShowPaymentFrame();
 		CurrStatus = 1;														//Return to payment mode
 
-		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,						//Make the window sizable
-			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
 		SetFocus(edCarNumber->hWnd);										//Let the car number editbox has focus
 	}
+	else if (CurrStatus == 4)											//Cannot exit the system when the system is locked
+		return;
 	else {																//Normal mode, user is goint to exit the system
 		//Show a prompt when exiting
 		if (1)/*ToDo: uncomment (MessageBox(GetMainWindowHandle(),

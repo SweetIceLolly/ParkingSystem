@@ -150,7 +150,6 @@ Args:           ParentHwnd: The parent window of the button
 				Event: Button_Click() handler for the button
 */
 IceButton::IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event) {
-	ClickEventFunction = Event;
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
 	GetWindowRect(hWnd, &CtlRect);
 	SetProp(hWnd, L"ClickEvent", (HANDLE)Event);
@@ -236,6 +235,35 @@ Description:    Clear all list items in the listview
 */
 void IceListView::DeleteAllItems() {
 	SendMessage(hWnd, LVM_DELETEALLITEMS, 0, 0);
+}
+
+//============================================================================
+/*
+Description:    Constructor of the tab control
+Args:           ParentHwnd: The parent window of the tab
+				CtlID: Control ID, usually defined in resource.h
+				SelectedEvent: Tab_SelectedTab() handler for the tab
+*/
+IceTab::IceTab(HWND ParentHwnd, int CtlID, TabSelectionEvent SelectedEvent) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
+	SetProp(hWnd, L"SelectedTabEvent", (HANDLE)SelectedEvent);
+}
+
+/*
+Description:    Add a new item to the tab
+Args:           Text: The text of the new item
+				Index: The index of the new item. -1 means at the end. Default = -1
+Return:			Index to of the new item if successful, or -1 otherwise
+*/
+LRESULT IceTab::InsertTab(wchar_t *Text, int Index) {
+	TCITEM tci = { 0 };																			//Tab control item info
+	tci.mask = TCIF_TEXT;
+	tci.cchTextMax = 255;
+	tci.pszText = Text;																			//Specific text
+	if (Index == -1)																			//Add the column header to the end
+		Index = SendMessage(hWnd, TCM_GETITEMCOUNT, 0, 0);											//Get total item count of the tab
+	return (int)SendMessage(hWnd, TCM_INSERTITEM, Index, (LPARAM)&tci);
 }
 
 //============================================================================

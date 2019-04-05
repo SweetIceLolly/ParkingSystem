@@ -41,6 +41,7 @@ void btnEnterOrExit_Click();					//Car enter/exit button click
 typedef void(*ButtonClickEvent)();              //Button_Click
 typedef void(*MenuClickEvent)();				//Menu_Click
 typedef void(*TimerEvent)();					//Timer_Timer
+typedef void(*TabSelectionEvent)();				//Tab_SelectedTab
 
 /* Description:		Timer class */
 class IceTimer {
@@ -90,8 +91,6 @@ public:
 /* Description:		Button control class */
 class IceButton : public BasicCtl {
 public:
-	ButtonClickEvent    ClickEventFunction;		//Button_Click() function
-	
 	IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event);
 	void SetCaption(wchar_t *Caption);
 };
@@ -112,6 +111,13 @@ public:
 	template<class ...Args> LRESULT AddItem(const wchar_t *FormatString, int Index = -1, Args&&... FormatParams);
 	template<class ...Args> LRESULT SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex = 0, Args&&... FormatParams);
 	void DeleteAllItems();
+};
+
+/* Description:		Tab class */
+class IceTab : public BasicCtl {
+public:
+	IceTab(HWND ParentHwnd, int CtlID, TabSelectionEvent SelectedEvent);
+	LRESULT InsertTab(wchar_t *Text, int Index = -1);
 };
 
 /*
