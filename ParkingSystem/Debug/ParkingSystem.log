@@ -1,13 +1,33 @@
-﻿  ParkingSystem.cpp
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(117): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(120): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(123): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(124): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(126): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(127): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(129): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(130): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(132): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(133): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(319): warning C4305: '*=' : truncation from 'double' to 'float'
-  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe
+﻿Build started 4/6/2019 12:37:57 PM.
+     1>Project "C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _USING_V110_SDK71_ /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt FileManager.cpp MessageHandler.cpp ParkingSystem.cpp
+         ParkingSystem.cpp
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(118): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(121): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(124): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(125): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(127): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(128): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(130): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(131): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(133): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(134): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(322): warning C4305: '*=' : truncation from 'double' to 'float'
+         MessageHandler.cpp
+     1>c:\users\administrator\downloads\portablegit-2.21.0-64-bit.7z\parkingsystem\parkingsystem\messagehandler.cpp(291): warning C4060: switch statement contains no 'case' or 'default' labels
+         Generating Code...
+         Skipping... (no relevant changes detected)
+         FileManager.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\Debug\ParkingSystem.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:ParkingSystem.exe.manifest /DEBUG /PDB:"C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\Debug\ParkingSystem.pdb" /SUBSYSTEM:WINDOWS,"5.01" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\Debug\ParkingSystem.lib" /MACHINE:X86 Debug\ParkingSystem.res
+         Debug\FileManager.obj
+         Debug\MessageHandler.obj
+         Debug\ParkingSystem.obj
+         Debug\SettingsWindow.obj
+         ParkingSystem.vcxproj -> C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\Debug\ParkingSystem.exe
+     1>Done Building Project "C:\Users\Administrator\Downloads\PortableGit-2.21.0-64-bit.7z\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:02.17

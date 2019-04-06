@@ -12,6 +12,8 @@ File:           MessageHandler.h
 #include <memory>
 #include "resource.h"
 
+#define swprintf_s wsprintf			//ToDo: Delete this line
+
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance
 HWND GetMainWindowHandle();																//This retrieves main window handle
@@ -118,6 +120,16 @@ class IceTab : public BasicCtl {
 public:
 	IceTab(HWND ParentHwnd, int CtlID, TabSelectionEvent SelectedEvent);
 	LRESULT InsertTab(wchar_t *Text, int Index = -1);
+};
+
+/* Description:		Painting canvas class */
+class IceCanvas : public BasicCtl {
+private:
+	static LRESULT CALLBACK CanvasWndProc(HWND, UINT, WPARAM, LPARAM);
+
+public:
+	IceCanvas(HWND ParentHwnd);
+	void DestroyCanvas();
 };
 
 /*

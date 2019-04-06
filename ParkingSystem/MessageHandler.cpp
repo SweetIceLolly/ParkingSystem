@@ -60,7 +60,7 @@ void IceTimer::SetEnabled(bool Enabled) {
 
 /*
 Description:	Timer procedure
-Args:			hWnd: Handle to window for timer messages
+Args:			hWnd: Handle to the window for timer messages
 				uMsg: WM_TIMER message
 				idTimer: Timer identifier
 				dwTime: Current system time
@@ -268,6 +268,34 @@ LRESULT IceTab::InsertTab(wchar_t *Text, int Index) {
 
 //============================================================================
 /*
+Description:    Constructor of canvas
+Args:           ParentHwnd: The parent window of the canvas
+*/
+IceCanvas::IceCanvas(HWND ParentHwnd) {
+	hWnd = CreateWindowEx(0, L"#32770", L"Canvas", WS_VISIBLE | WS_CHILD,
+		0, 0, 100, 100, ParentHwnd, (HMENU)NULL, GetProgramInstance(), NULL);
+	//PrevWndProc = (WNDPROC)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc);
+	SetProp(hWnd, L"PrevWndProc", (HANDLE)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc));	//Store previous window procedure and set the new procedure
+}
+
+/*
+Description:    Canvas child window procedure
+Args:           hWnd: Handle to the window
+                uMsg: Message code
+                wParam, lParam: Extra infos
+Return:         Result of message handling
+*/
+LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+
+	}
+
+	//Call the default window prodecure
+	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
+}
+
+//============================================================================
+/*
 Description:    This copys hInstance to ProgramInstance
 Args:           hInstance: Program hInstance
 */
@@ -320,6 +348,10 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				switch (LOWORD(wParam)) {													//Get menu ID
 				case ID_FILE_PARKINGLOG:														//Show parking log
 					mnuLog_Click();
+					break;
+
+				case ID_FILE_REPORT:															//Show parking report
+					mnuReport_Click();
 					break;
 
 				case ID_FILE_LOCKSYSTEM:														//Lock system

@@ -39,9 +39,10 @@ Value		Name				Description
 2			Log mode			Viewing log
 3			Unlocking mode		In payment mode, trying to unlock the program
 4			Locked				System locked, requires password to manage
+5			Report mode			Viewing report
 */
 char							CurrStatus = 0;
-char							nPasswordTried;								//Password attempt times left
+char							nPasswordTried = 2;							//Password attempt times left
 
 /*
 Description:    Hide password-related controls
@@ -154,6 +155,8 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		btnLogin->Move(PasswordFramePos.x + 105, PasswordFramePos.y + 75);
 		btnCancelLogin->Move(PasswordFramePos.x + 190, PasswordFramePos.y + 75);
 	}
+	if (CurrStatus == 5 || CurrStatus == 0)									//Report viewing mode
+		tabReport->Size(Width, Height);
 }
 
 /*
@@ -425,6 +428,10 @@ void MainWindow_Create(HWND hWnd) {
 	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Position", 80);
 	lvLog->AddColumn(L"Fee", 50);
+	tabReport->InsertTab(L"Position Info");									//Add tabs to tab control
+	tabReport->InsertTab(L"History");
+	tabReport->InsertTab(L"Daily Report");
+	tabReport->InsertTab(L"Monthly Report");
 
 	//Load data file
 	LogFile = make_shared<IceEncryptedFile>(L"Log.dat");
@@ -498,11 +505,11 @@ void mnuEnterPaymentMode_Click() {
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
-		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize log listview
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize payment controls
 }
 
 /*
-Description:	To handle Show Log menu event
+Description:	To handle show Log menu event
 */
 void mnuLog_Click() {
 	lvLog->DeleteAllItems();												//Clear log listview
@@ -541,6 +548,7 @@ void mnuLog_Click() {
 		//Car position
 		lvLog->SetItemText(i, L"%i", 4, LogFile->FileContent.LogData[i].CarPos);
 	}
+	tabReport->SetVisible(false);											//Hide report tab
 	lvLog->SetVisible(true);												//Show log listview
 	CurrStatus = 2;															//Change status to log mode
 
@@ -548,7 +556,24 @@ void mnuLog_Click() {
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
-		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to center password frame
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize listview
+}
+
+/*
+Description:	To handle show report menu event
+*/
+void mnuReport_Click() {
+	lvLog->SetVisible(false);
+	tabReport->SetVisible(true);
+	CurrStatus = 5;
+
+	RECT	MainWindowSize;
+	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
+	MainWindow_Resize(GetMainWindowHandle(),
+		MainWindowSize.right - MainWindowSize.left,
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize tab control
+
+	IceCanvas ic(tabReport->hWnd);
 }
 
 /*
