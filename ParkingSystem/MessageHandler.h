@@ -12,8 +12,7 @@ File:           MessageHandler.h
 #include <memory>
 #include "resource.h"
 
-#define swprintf_s wsprintf			//ToDo: Delete this line
-
+/* Procedure declarations */
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance
 HWND GetMainWindowHandle();																//This retrieves main window handle
@@ -73,7 +72,7 @@ protected:
 
 public:
 	HWND				hWnd;					//Control handle
-	RECT				CtlRect;				//non realtime-update
+	RECT				CtlRect;				//Non realtime-update
 
 	~BasicCtl();
 	void SetVisible(bool Visible);
@@ -125,12 +124,26 @@ public:
 /* Description:		Painting canvas class */
 class IceCanvas : public BasicCtl {
 private:
+	HBRUSH				ColorBrush;				//Background color brush
+	BITMAPINFO			bi;						//Memory bitmap info strucutre
+	WNDPROC				PervWndProc;			//Previous window procedure
+
 	static LRESULT CALLBACK CanvasWndProc(HWND, UINT, WPARAM, LPARAM);
+	void CreateMemoryDC(int Width, int Height);
+	void DeleteMemoryDC();
 
 public:
-	IceCanvas(HWND ParentHwnd);
+	HDC					hDC = 0;				//Canvas memory HDC
+	HBITMAP				hBmp = 0;				//Canvas memory bitmap
+
+	IceCanvas(HWND ParentHwnd, COLORREF BackColor = 0xffffff);
+	~IceCanvas();
 	void DestroyCanvas();
+	template <class ...Args> void Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams);
 };
+
+/* ==================================================================================================
+   ======================================= Template functions ======================================= */
 
 /*
 Description:    Set the caption of the label control
@@ -154,7 +167,7 @@ Return:			TRUE if successful, or FALSE otherwise
 */
 template<class ...Args>
 LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
-	LVITEM		lvi;																			//Listview item info
+	LVITEM		lvi = { 0 };;					//Listview item info
 	wchar_t		buf[255];
 
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
@@ -167,14 +180,14 @@ LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int Sub
 
 /*
 Description:    Add a new list item to the listview
-Args:           FormatString: The text of the new item
+Args:           FormatString: Format string of the text of the new item
 				Index: The index of the new column. -1 means at the end of the list. Default = -1
 				FormatParams: String parameters
 Return:			Index to of the new item if successful, or -1 otherwise
 */
 template<class ...Args>
 LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... FormatParams) {
-	LVITEM		lvi = { 0 };																	//Listview item info
+	LVITEM		lvi = { 0 };					//Listview item info
 	wchar_t		buf[255];
 
 	if (Index == -1)																			//Add the item to the end
@@ -186,4 +199,20 @@ LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... F
 	lvi.cchTextMax = lstrlenW(buf);
 	lvi.pszText = buf;
 	return SendMessage(hWnd, LVM_INSERTITEM, 0, (LPARAM)&lvi);
+}
+
+
+/*
+Description:    Print a text on canvas
+Args:           X, Y: Text output position
+				FormatString: Format string of the output text
+				FormatParams: String parameters
+*/
+template <class ...Args>
+void IceCanvas::Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams) {
+	wchar_t		buf[255];
+
+	swprintf_s(buf, FormatString, std::forward<Args>(FormatString)...);
+	BOOL e;
+	e = TextOut(hDC, X, Y, buf, lstrlenW(buf));
 }

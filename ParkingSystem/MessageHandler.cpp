@@ -268,14 +268,54 @@ LRESULT IceTab::InsertTab(wchar_t *Text, int Index) {
 
 //============================================================================
 /*
+Description:	Create memory DC & bitmap for canvas
+Args:			Width, Height: Memory DC size
+*/
+void IceCanvas::CreateMemoryDC(int Width, int Height) {
+	//Set bitmap info
+	memset(&bi, 0, sizeof(bi));
+	bi.bmiHeader.biBitCount = 32;																	//32-bit color
+	bi.bmiHeader.biSize = sizeof(bi);
+	bi.bmiHeader.biPlanes = 1;
+	bi.bmiHeader.biWidth = Width;
+	bi.bmiHeader.biHeight = Height;
+	bi.bmiHeader.biSizeImage = Width * Height * 32 / 8;												//Calculate bitmap image size
+
+	hDC = CreateCompatibleDC(NULL);																	//Create canvas memory DC
+	hBmp = CreateDIBSection(hDC, &bi, DIB_RGB_COLORS, NULL, NULL, 0);								//Create canvas memory bitmap
+	SelectObject(hDC, hBmp);																		//Bind DC & bitmap
+}
+
+/*
+Description:	Delete memory DC & bitmap
+*/
+void IceCanvas::DeleteMemoryDC() {
+	if (hDC)
+		DeleteDC(hDC);
+	if (hBmp)
+		DeleteObject(hBmp);
+}
+
+/*
 Description:    Constructor of canvas
 Args:           ParentHwnd: The parent window of the canvas
+				BackColor: Background color of the canvas. Default is 0xffffff (white)
 */
-IceCanvas::IceCanvas(HWND ParentHwnd) {
+IceCanvas::IceCanvas(HWND ParentHwnd, COLORREF BackColor) {
+	ColorBrush = CreateSolidBrush(BackColor);
 	hWnd = CreateWindowEx(0, L"#32770", L"Canvas", WS_VISIBLE | WS_CHILD,
 		0, 0, 100, 100, ParentHwnd, (HMENU)NULL, GetProgramInstance(), NULL);
-	//PrevWndProc = (WNDPROC)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc);
-	SetProp(hWnd, L"PrevWndProc", (HANDLE)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc));	//Store previous window procedure and set the new procedure
+	CreateMemoryDC(100, 100);																		//Create initial memory DC
+	SetProp(hWnd, L"Object", (HANDLE)this);															//Save a pointer to this class
+	PervWndProc = (WNDPROC)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc);					//Store previous window procedure and set the new procedure
+	SetBkMode(hDC, TRANSPARENT);																	//Make output text background be transparent
+}
+
+/*
+Description:    Destructor of canvas class
+*/
+IceCanvas::~IceCanvas() {
+	DestroyCanvas();
 }
 
 /*
@@ -287,11 +327,54 @@ Return:         Result of message handling
 */
 LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
+	case WM_SIZE:
+		//Remember current DC handle & bitmap handle
+		HDC		PrevHDC;
+		HBITMAP	PrevBmp;
 
+		PrevHDC = ((IceCanvas*)GetProp(hWnd, L"Object"))->hDC;
+		PrevBmp = ((IceCanvas*)GetProp(hWnd, L"Object"))->hBmp;
+
+		//Re-create memory DC & bitmap with the new size
+		int Width, Height;
+
+		Width = LOWORD(lParam);
+		Height = HIWORD(lParam);
+		((IceCanvas*)GetProp(hWnd, L"Object"))->CreateMemoryDC(Width, Height);
+
+		//Paint image from previous memory DC to the new memory DC
+		BitBlt(((IceCanvas*)GetProp(hWnd, L"Object"))->hDC, 0, 0, Width, Height, PrevHDC, 0, 0, SRCCOPY);
+
+		//Delete previous memory DC & bitmap
+		DeleteDC(PrevHDC);
+		DeleteObject(PrevBmp);
+
+		break;
+
+	case WM_ERASEBKGND:
+		//Note that for this message, wParam is hDC of the window
+		BitBlt((HDC)wParam, 0, 0,
+			((IceCanvas*)GetProp(hWnd, L"Object"))->bi.bmiHeader.biWidth,
+			((IceCanvas*)GetProp(hWnd, L"Object"))->bi.bmiHeader.biHeight,
+			((IceCanvas*)GetProp(hWnd, L"Object"))->hDC, 0, 0, SRCCOPY);							//Paint contents from memory DC
+		return 0;
+
+	case WM_MOUSEMOVE:
+		SetWindowPos(hWnd, 0, 0, 0, LOWORD(lParam) + 5, HIWORD(lParam) + 5, SWP_NOZORDER | SWP_NOMOVE);
+		return 0;
 	}
 
 	//Call the default window prodecure
-	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
+	return CallWindowProc(((IceCanvas*)GetProp(hWnd, L"Object"))->PervWndProc, hWnd, uMsg, wParam, lParam);
+}
+
+/*
+Description:    Close canvas child window
+*/
+void IceCanvas::DestroyCanvas() {
+	DeleteObject(ColorBrush);																		//Release background color brush memory
+	DeleteMemoryDC();																				//Release memory DC & bitmap
+	DestroyWindow(hWnd);																			//Close canvas window
 }
 
 //============================================================================

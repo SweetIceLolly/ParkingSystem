@@ -573,7 +573,8 @@ void mnuReport_Click() {
 		MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize tab control
 
-	IceCanvas ic(tabReport->hWnd);
+	static IceCanvas ic(tabReport->hWnd, 0x0000ff);
+	ic.Print(0, 0, L"Shar");
 }
 
 /*
