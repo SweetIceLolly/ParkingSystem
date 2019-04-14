@@ -14,6 +14,7 @@ shared_ptr<IceButton>			btnLogin;
 shared_ptr<IceButton>			btnCancelLogin;
 shared_ptr<IceListView>			lvLog;
 shared_ptr<IceTab>				tabReport;
+shared_ptr<IceCanvas>			PositionReportCanvas;
 shared_ptr<IceLabel>			labPasswordIcon;
 shared_ptr<IceLabel>			labPassword;
 shared_ptr<IceLabel>			labWelcome;
@@ -176,9 +177,8 @@ void btnLogin_Click() {
 			SetMenu(GetMainWindowHandle(), hMenu);
 			DestroyMenu(hMenu);
 
-			//Hide and show the window to apply new style
-			ShowWindow(GetMainWindowHandle(), SW_HIDE);
-			ShowWindow(GetMainWindowHandle(), SW_SHOW);
+			//Redraw the window to apply new style
+			InvalidateRect(GetMainWindowHandle(), NULL, TRUE);
 
 			//Add parking cars to the list
 			for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
@@ -395,7 +395,8 @@ void MainWindow_Create(HWND hWnd) {
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
 	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
-	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, (TabSelectionEvent)NULL);
+	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, (VOID_EVENT)NULL);
+	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, , );
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
 	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
@@ -496,6 +497,7 @@ Description:	To handle Enter Payment Mode menu event
 */
 void mnuEnterPaymentMode_Click() {
 	lvLog->SetVisible(false);												//Hide unrelated controls
+	tabReport->SetVisible(false);
 	ShowPaymentFrame();
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	SetFocus(edCarNumber->hWnd);											//Set input focus to the car number textbox
@@ -572,9 +574,6 @@ void mnuReport_Click() {
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize tab control
-
-	static IceCanvas ic(tabReport->hWnd, 0x0000ff);
-	ic.Print(0, 0, L"Shar");
 }
 
 /*

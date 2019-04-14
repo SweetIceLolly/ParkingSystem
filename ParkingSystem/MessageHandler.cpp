@@ -25,7 +25,7 @@ HWND		hwndMainWindow;							//Main window handle
 Description:    Constructor of the timer class
 Args:           Visible: New visibility status
 */
-IceTimer::IceTimer(UINT Interval, TimerEvent Event, bool Enabled) {
+IceTimer::IceTimer(UINT Interval, VOID_EVENT Event, bool Enabled) {
 	TimerEventFunction = Event;															//Set the event function
 	IceTimer::Interval = Interval;														//Record the interval
 	TimerID = SetTimer(hwndMainWindow, (UINT_PTR)this, Interval, (TIMERPROC)TimerProc);	//Create a timer with ID = pointer to this class
@@ -149,7 +149,7 @@ Args:           ParentHwnd: The parent window of the button
 				CtlID: Control ID, usually defined in resource.h
 				Event: Button_Click() handler for the button
 */
-IceButton::IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event) {
+IceButton::IceButton(HWND ParentHwnd, int CtlID, VOID_EVENT Event) {
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
 	GetWindowRect(hWnd, &CtlRect);
 	SetProp(hWnd, L"ClickEvent", (HANDLE)Event);
@@ -244,7 +244,7 @@ Args:           ParentHwnd: The parent window of the tab
 				CtlID: Control ID, usually defined in resource.h
 				SelectedEvent: Tab_SelectedTab() handler for the tab
 */
-IceTab::IceTab(HWND ParentHwnd, int CtlID, TabSelectionEvent SelectedEvent) {
+IceTab::IceTab(HWND ParentHwnd, int CtlID, VOID_EVENT SelectedEvent) {
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
 	GetWindowRect(hWnd, &CtlRect);
 	SetProp(hWnd, L"SelectedTabEvent", (HANDLE)SelectedEvent);
@@ -301,11 +301,15 @@ Description:    Constructor of canvas
 Args:           ParentHwnd: The parent window of the canvas
 				BackColor: Background color of the canvas. Default is 0xffffff (white)
 */
-IceCanvas::IceCanvas(HWND ParentHwnd, COLORREF BackColor) {
-	ColorBrush = CreateSolidBrush(BackColor);
+IceCanvas::IceCanvas(HWND ParentHwnd, COLORREF BackColor,
+	MOUSEMOVE_EVENT ResizeEvent, MOUSEMOVE_EVENT MouseMoveEvent) {
+	ColorBrush = CreateSolidBrush(BackColor);														//Create background brush
+	ResizeEventFunction = ResizeEvent;																//Record event functions
+	MouseMoveEventFunction = MouseMoveEvent;
 	hWnd = CreateWindowEx(0, L"#32770", L"Canvas", WS_VISIBLE | WS_CHILD,
 		0, 0, 100, 100, ParentHwnd, (HMENU)NULL, GetProgramInstance(), NULL);
 	CreateMemoryDC(100, 100);																		//Create initial memory DC
+	Cls();
 	SetProp(hWnd, L"Object", (HANDLE)this);															//Save a pointer to this class
 	PervWndProc = (WNDPROC)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc);					//Store previous window procedure and set the new procedure
 	SetBkMode(hDC, TRANSPARENT);																	//Make output text background be transparent
@@ -319,6 +323,47 @@ IceCanvas::~IceCanvas() {
 }
 
 /*
+Description:    Clean canvas
+*/
+void IceCanvas::Cls() {
+	RECT	rc = { 0, 0, bi.bmiHeader.biWidth, bi.bmiHeader.biHeight };
+	FillRect(hDC, &rc, ColorBrush);
+	InvalidateRect(hWnd, NULL, TRUE);
+}
+
+/*
+Description:    Set canvas pen properties
+Args:           Width: Pen width, default = 1
+				PenColor: Pen color, default = 0 (black)
+				PenStyle: Pen style, default = PS_SOLID (solid lines)
+*/
+void IceCanvas::SetPenProps(int Width = 1, COLORREF PenColor = 0, int PenStyle = PS_SOLID) {
+	if (CanvasPen)																					//Delete previous pen
+		DeleteObject(CanvasPen);
+	CreatePen(PenStyle, Width, PenColor);															//Create a new pen with specified style
+	SelectObject(hDC, CanvasPen);																	//Bind the new pen with memory DC
+}
+
+/*
+Description:    Draw a line on canvas
+Args:           FromX, FromY: Position of one of the endpoints of the line
+				ToX, ToY: Position of the other endpoint of the line
+*/
+void IceCanvas::DrawLine(int FromX, int FromY, int ToX, int ToY) {
+	MoveToEx(hDC, FromX, FromY, NULL);																//Move the pen to (FromX, FromY)
+	LineTo(hDC, ToX, ToY);																			//Line from (FromX, FromY) to (ToX, ToY)
+}
+
+/*
+Description:    Draw a rectangle on canvas
+Args:           X1, Yi: Position of left-up endpoint of the rectangle
+				X2, Y2: Position of right-down endpoint of the rectangle
+*/
+void IceCanvas::DrawRect(int X1, int Y1, int X2, int Y2) {
+	Rectangle(hDC, X1, Y1, X2, Y2);
+}
+
+/*
 Description:    Canvas child window procedure
 Args:           hWnd: Handle to the window
                 uMsg: Message code
@@ -326,53 +371,61 @@ Args:           hWnd: Handle to the window
 Return:         Result of message handling
 */
 LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	IceCanvas*	ThisCanvas = (IceCanvas*)GetProp(hWnd, L"Object");									//Retrieve a pointer to this class
+
 	switch (uMsg) {
 	case WM_SIZE:
 		//Remember current DC handle & bitmap handle
-		HDC		PrevHDC;
-		HBITMAP	PrevBmp;
+		HDC			PrevHDC;
+		HBITMAP		PrevBmp;
 
-		PrevHDC = ((IceCanvas*)GetProp(hWnd, L"Object"))->hDC;
-		PrevBmp = ((IceCanvas*)GetProp(hWnd, L"Object"))->hBmp;
+		PrevHDC = ThisCanvas->hDC;
+		PrevBmp = ThisCanvas->hBmp;
 
 		//Re-create memory DC & bitmap with the new size
 		int Width, Height;
 
 		Width = LOWORD(lParam);
 		Height = HIWORD(lParam);
-		((IceCanvas*)GetProp(hWnd, L"Object"))->CreateMemoryDC(Width, Height);
+		ThisCanvas->CreateMemoryDC(Width, Height);
 
 		//Paint image from previous memory DC to the new memory DC
-		BitBlt(((IceCanvas*)GetProp(hWnd, L"Object"))->hDC, 0, 0, Width, Height, PrevHDC, 0, 0, SRCCOPY);
+		BitBlt(ThisCanvas->hDC, 0, 0, Width, Height, PrevHDC, 0, 0, SRCCOPY);
 
 		//Delete previous memory DC & bitmap
 		DeleteDC(PrevHDC);
 		DeleteObject(PrevBmp);
 
+		//Invoke resize event
+		ThisCanvas->ResizeEventFunction(LOWORD(lParam), HIWORD(lParam));
+
 		break;
 
 	case WM_ERASEBKGND:
+		//Paint contents from memory DC
 		//Note that for this message, wParam is hDC of the window
 		BitBlt((HDC)wParam, 0, 0,
-			((IceCanvas*)GetProp(hWnd, L"Object"))->bi.bmiHeader.biWidth,
-			((IceCanvas*)GetProp(hWnd, L"Object"))->bi.bmiHeader.biHeight,
-			((IceCanvas*)GetProp(hWnd, L"Object"))->hDC, 0, 0, SRCCOPY);							//Paint contents from memory DC
+			ThisCanvas->bi.bmiHeader.biWidth,
+			ThisCanvas->bi.bmiHeader.biHeight,
+			ThisCanvas->hDC, 0, 0, SRCCOPY);
 		return 0;
 
 	case WM_MOUSEMOVE:
-		SetWindowPos(hWnd, 0, 0, 0, LOWORD(lParam) + 5, HIWORD(lParam) + 5, SWP_NOZORDER | SWP_NOMOVE);
+		ThisCanvas->MouseMoveEventFunction(LOWORD(lParam), HIWORD(lParam)); 
 		return 0;
 	}
 
 	//Call the default window prodecure
-	return CallWindowProc(((IceCanvas*)GetProp(hWnd, L"Object"))->PervWndProc, hWnd, uMsg, wParam, lParam);
+	return CallWindowProc(ThisCanvas->PervWndProc, hWnd, uMsg, wParam, lParam);
 }
 
 /*
 Description:    Close canvas child window
 */
 void IceCanvas::DestroyCanvas() {
-	DeleteObject(ColorBrush);																		//Release background color brush memory
+	DeleteObject(ColorBrush);																		//Release background color brush
+	if (CanvasPen)																					//Release canvas pen
+		DeleteObject(CanvasPen);
 	DeleteMemoryDC();																				//Release memory DC & bitmap
 	DestroyWindow(hWnd);																			//Close canvas window
 }
@@ -422,7 +475,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			switch (HIWORD(wParam)) {													//Control notification code
 			case BN_CLICKED:																//Button clicked
 				//Invoke Button_Click()
-				((ButtonClickEvent)(GetProp((HWND)lParam, L"ClickEvent")))();
+				((VOID_EVENT)(GetProp((HWND)lParam, L"ClickEvent")))();
 				break;
 			}
 		}

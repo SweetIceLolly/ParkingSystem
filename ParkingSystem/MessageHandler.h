@@ -39,10 +39,8 @@ void btnLogin_Click();							//Login button click
 void btnEnterOrExit_Click();					//Car enter/exit button click
 
 /* Event types */
-typedef void(*ButtonClickEvent)();              //Button_Click
-typedef void(*MenuClickEvent)();				//Menu_Click
-typedef void(*TimerEvent)();					//Timer_Timer
-typedef void(*TabSelectionEvent)();				//Tab_SelectedTab
+typedef void(*VOID_EVENT)();					//For void ***() events
+typedef void(*MOUSEMOVE_EVENT)(int, int);		//For void ***(int, int) events
 
 /* Description:		Timer class */
 class IceTimer {
@@ -53,10 +51,10 @@ private:
 	static void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT_PTR idTimer, DWORD dwTime);
 
 public:
-	TimerEvent			TimerEventFunction;		//Timer_Timer() function
+	VOID_EVENT			TimerEventFunction;		//Timer_Timer() function
 	UINT				Interval;				//Timer interval
 
-	IceTimer(UINT Interval, TimerEvent Event, bool Enabled = false);
+	IceTimer(UINT Interval, VOID_EVENT Event, bool Enabled = false);
 	~IceTimer();
 	bool GetEnabled();
 	void SetEnabled(bool Enabled);
@@ -92,7 +90,7 @@ public:
 /* Description:		Button control class */
 class IceButton : public BasicCtl {
 public:
-	IceButton(HWND ParentHwnd, int CtlID, ButtonClickEvent Event);
+	IceButton(HWND ParentHwnd, int CtlID, VOID_EVENT Event);
 	void SetCaption(wchar_t *Caption);
 };
 
@@ -117,7 +115,7 @@ public:
 /* Description:		Tab class */
 class IceTab : public BasicCtl {
 public:
-	IceTab(HWND ParentHwnd, int CtlID, TabSelectionEvent SelectedEvent);
+	IceTab(HWND ParentHwnd, int CtlID, VOID_EVENT SelectedEvent);
 	LRESULT InsertTab(wchar_t *Text, int Index = -1);
 };
 
@@ -125,6 +123,7 @@ public:
 class IceCanvas : public BasicCtl {
 private:
 	HBRUSH				ColorBrush;				//Background color brush
+	HPEN				CanvasPen = 0;			//Pen of the canvas
 	BITMAPINFO			bi;						//Memory bitmap info strucutre
 	WNDPROC				PervWndProc;			//Previous window procedure
 
@@ -135,11 +134,18 @@ private:
 public:
 	HDC					hDC = 0;				//Canvas memory HDC
 	HBITMAP				hBmp = 0;				//Canvas memory bitmap
+	MOUSEMOVE_EVENT		ResizeEventFunction;	//Canvas_Paint() event
+	MOUSEMOVE_EVENT		MouseMoveEventFunction;	//Canvas_MouseMove() event
 
-	IceCanvas(HWND ParentHwnd, COLORREF BackColor = 0xffffff);
+	IceCanvas(HWND ParentHwnd, COLORREF BackColor = 0xffffff,
+		MOUSEMOVE_EVENT ResizeEvent = NULL, MOUSEMOVE_EVENT MouseMoveEvent = NULL);
 	~IceCanvas();
 	void DestroyCanvas();
 	template <class ...Args> void Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams);
+	void Cls();
+	void SetPenProps(int Width = 1, COLORREF PenColor = 0, int PenStyle = PS_SOLID);
+	void DrawLine(int FromX, int FromY, int ToX, int ToY);
+	void DrawRect(int X1, int Y1, int X2, int Y2);
 };
 
 /* ==================================================================================================
@@ -167,7 +173,7 @@ Return:			TRUE if successful, or FALSE otherwise
 */
 template<class ...Args>
 LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
-	LVITEM		lvi = { 0 };;					//Listview item info
+	LVITEM		lvi = { 0 };					//Listview item info
 	wchar_t		buf[255];
 
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
@@ -212,7 +218,7 @@ template <class ...Args>
 void IceCanvas::Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams) {
 	wchar_t		buf[255];
 
-	swprintf_s(buf, FormatString, std::forward<Args>(FormatString)...);
-	BOOL e;
-	e = TextOut(hDC, X, Y, buf, lstrlenW(buf));
+	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
+	TextOut(hDC, X, Y, buf, lstrlenW(buf));
+	InvalidateRect(hWnd, NULL, TRUE);
 }
