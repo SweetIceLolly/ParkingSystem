@@ -1,4 +1,13 @@
-﻿SettingsWindow.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'SettingsWindow.obj' or at 'K:\EXEs\Programs\Source\ParkingSystem\Debug\vc120.pdb'; linking object as if no debug info
-MessageHandler.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'MessageHandler.obj' or at 'K:\EXEs\Programs\Source\ParkingSystem\Debug\vc120.pdb'; linking object as if no debug info
-FileManager.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'FileManager.obj' or at 'K:\EXEs\Programs\Source\ParkingSystem\Debug\vc120.pdb'; linking object as if no debug info
+﻿  ParkingSystem.cpp
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(120): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(123): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(126): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(127): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(129): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(130): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(132): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(133): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(135): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(136): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(307): warning C4244: 'return' : conversion from 'double' to 'float', possible loss of data
   ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe

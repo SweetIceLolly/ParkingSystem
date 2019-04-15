@@ -109,7 +109,7 @@ void BasicCtl::Size(int Width, int Height) {
 /*
 Description:    Set the font of the control
 Args:           FontSize: New font size
-Bold:			Whether the font is bold or not
+				Bold: Whether the font is bold or not
 */
 void BasicCtl::SetFont(int FontSize, bool Bold) {
 	if (hFont)																					//Release the font object before a new one is created

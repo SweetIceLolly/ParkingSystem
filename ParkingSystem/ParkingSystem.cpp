@@ -264,6 +264,52 @@ void btnCancelLogin_Click() {
 }
 
 /*
+Description:	To calculate required fee with specified time info
+Args:           EnterTime: Enter time of the car
+				LeaveTime: Leave time of the car
+				OutHourDifference: Return value of HourDifference. Default = NULL (means the value won't be returned)
+Return:			Required fee
+*/
+float CalcFee(SYSTEMTIME *EnterTime, SYSTEMTIME *LeaveTime, int *OutHourDifference = NULL) {
+	int			HourDifference;												//No. of hours between EnterTime and CurrTime
+
+	if (LeaveTime->wDay < EnterTime->wDay) {
+		if (LeaveTime->wMonth == 2) {											//February
+			if ((LeaveTime->wYear % 4 == 0 && LeaveTime->wYear % 100 != 0) ||
+				(LeaveTime->wYear % 400 == 0))										//For leap years, 29 days in Feb
+
+				LeaveTime->wDay += 29;
+			else																	//For normal years, 28 days in Feb
+				LeaveTime->wDay += 28;
+		}
+		else if (LeaveTime->wMonth == 5 || LeaveTime->wMonth == 7 || LeaveTime->wMonth == 10 || LeaveTime->wMonth == 12)
+			LeaveTime->wDay += 30;													//30-days months
+		else
+			LeaveTime->wDay += 31;													//31-days months
+		LeaveTime->wMonth--;													//Month reduced by 1 cuz we just added the days to wDay
+	}
+
+	if (LeaveTime->wMonth < EnterTime->wMonth) {							//Not a full year
+		LeaveTime->wMonth += 12;
+		LeaveTime->wYear--;
+	}
+
+	HourDifference = (LeaveTime->wYear - EnterTime->wYear +
+		LeaveTime->wMonth - EnterTime->wMonth +
+		LeaveTime->wDay - EnterTime->wDay) * 24 +
+		LeaveTime->wHour - EnterTime->wHour;								//Calculate date difference in hours
+	if (LeaveTime->wMinute > 0)													//Less than 1 hour = 1 hour
+		HourDifference++;
+
+	if (OutHourDifference)													//If the user wants HourDifference to be returned
+		*OutHourDifference = HourDifference;
+	if (HourDifference > 5)														//20% off for >5hrs parking
+		return (float)HourDifference * LogFile->FileContent.FeePerHour * 0.8;
+	else
+		return (float)HourDifference * LogFile->FileContent.FeePerHour;
+}
+
+/*
 Description:	To handle enter & exit button event
 */
 void btnEnterOrExit_Click() {
@@ -288,41 +334,9 @@ void btnEnterOrExit_Click() {
 			ParkingPos[LogFile->FileContent.LogData[CurrParkedCars[i]].CarPos] = false;	//Mark the parking position as unoccupied
 			
 			//Calculate fee when the car is leaving
-			int				HourDifference;												//No. of hours between EnterTime and CurrTime
-			SYSTEMTIME		*EnterTime =
-				&(LogFile->FileContent.LogData[CurrParkedCars[i]].EnterTime);			//Get a pointer to EnterTime of current log for convenience
-
-			if (CurrTime.wDay < EnterTime->wDay) {
-				if (CurrTime.wMonth == 2) {												//February
-					if ((CurrTime.wYear % 4 == 0 && CurrTime.wYear % 100 != 0) ||
-						(CurrTime.wYear % 400 == 0))										//For leap years, 29 days in Feb
-
-						CurrTime.wDay += 29;
-					else																	//For normal years, 28 days in Feb
-						CurrTime.wDay += 28;
-				}
-				else if (CurrTime.wMonth == 5 || CurrTime.wMonth == 7 || CurrTime.wMonth == 10 || CurrTime.wMonth == 12)
-					CurrTime.wDay += 30;													//30-days months
-				else
-					CurrTime.wDay += 31;													//31-days months
-				CurrTime.wMonth--;														//Month reduced by 1 cuz we just added the days to wDay
-			}
-
-			if (CurrTime.wMonth < EnterTime->wMonth) {								//Not a full year
-				CurrTime.wMonth += 12;
-				CurrTime.wYear--;
-			}
-
-			HourDifference = (CurrTime.wYear - EnterTime->wYear +
-				CurrTime.wMonth - EnterTime->wMonth +
-				CurrTime.wDay - EnterTime->wDay) * 24 +
-				CurrTime.wHour - EnterTime->wHour;									//Calculate date difference in hours
-			if (CurrTime.wMinute > 0)													//Less than 1 hour = 1 hour
-				HourDifference++;
-
-			LogFile->FileContent.LogData[CurrParkedCars[i]].Fee = (float)HourDifference * LogFile->FileContent.FeePerHour;
-			if (HourDifference > 5)														//20% off for >5hrs parking
-				LogFile->FileContent.LogData[CurrParkedCars[i]].Fee *= 0.8;
+			int	HourDifference;
+			LogFile->FileContent.LogData[CurrParkedCars[i]].Fee = CalcFee(
+				&(LogFile->FileContent.LogData[CurrParkedCars[i]].EnterTime), &CurrTime, &HourDifference);
 
 			//Display parking hours and fee
 			labWelcome->SetText(L"Hours Parked: %ihr, Fee: $%.2f",
@@ -346,7 +360,7 @@ void btnEnterOrExit_Click() {
 	for (int i = 0; i < 100; i++) {											//Find an unoccupied position
 		if (!ParkingPos[i]) {
 			ParkingPos[i] = true;												//Mark the position as occupied
-			labWelcome->SetText(L"Welcome! Your Car Position: %i", i);			//Show the position for the user
+			labWelcome->SetText(L"Welcome! Your Car Position: %i", i + 1);		//Show the position for the user
 			LogFile->AddLog(CarNumber, CurrTime, { 0 }, i, 0);					//Add car enter log
 			CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);	//Add the log index to the parked cars list
 			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
@@ -432,7 +446,7 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 
 	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
 		if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
-			
+			PrevPos = -1;
 			return;
 		}
 
@@ -451,6 +465,20 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 			}
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 70,
 				L"Car Number: %s", LogFile->FileContent.LogData[CurrParkedCars[nOccupiedPos]].CarNumber);
+			
+			//Show enter time & est. fee info
+			SYSTEMTIME stEnter = LogFile->FileContent.LogData[CurrParkedCars[nOccupiedPos]].EnterTime;
+			SYSTEMTIME stNow;
+			int HourDifference;
+
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 90,
+				L"Enter Time: %04u-%02u-%02u %02u:%02u:%02u",
+				stEnter.wYear, stEnter.wMonth, stEnter.wDay, stEnter.wHour, stEnter.wMinute, stEnter.wSecond);
+			GetLocalTime(&stNow);
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 130,
+				L"Estimated Fee (Until Now): $%.2f", CalcFee(&stEnter, &stNow, &HourDifference));
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 110,
+				L"Hours Parked (Until Now): %i", HourDifference);
 		}
 		else {																	//Position unoccupied
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
@@ -513,7 +541,7 @@ void MainWindow_Create(HWND hWnd) {
 	lvLog->AddColumn(L"Enter Time (YYYY-MM-DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Position", 80);
-	lvLog->AddColumn(L"Fee", 50);
+	lvLog->AddColumn(L"Fee", 70);
 	tabReport->InsertTab(L"Position Info");									//Add tabs to tab control
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
