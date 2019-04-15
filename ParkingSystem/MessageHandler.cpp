@@ -284,6 +284,9 @@ void IceCanvas::CreateMemoryDC(int Width, int Height) {
 	hDC = CreateCompatibleDC(NULL);																	//Create canvas memory DC
 	hBmp = CreateDIBSection(hDC, &bi, DIB_RGB_COLORS, NULL, NULL, 0);								//Create canvas memory bitmap
 	SelectObject(hDC, hBmp);																		//Bind DC & bitmap
+
+	SelectObject(hDC, GetStockObject(NULL_BRUSH));													//Make rectangles background be transparent
+	SetBkMode(hDC, TRANSPARENT);																	//Make output text background be transparent
 }
 
 /*
@@ -302,17 +305,17 @@ Args:           ParentHwnd: The parent window of the canvas
 				BackColor: Background color of the canvas. Default is 0xffffff (white)
 */
 IceCanvas::IceCanvas(HWND ParentHwnd, COLORREF BackColor,
-	MOUSEMOVE_EVENT ResizeEvent, MOUSEMOVE_EVENT MouseMoveEvent) {
+	VOID_EVENT PaintEvent, MOUSEMOVE_EVENT MouseMoveEvent) {
 	ColorBrush = CreateSolidBrush(BackColor);														//Create background brush
-	ResizeEventFunction = ResizeEvent;																//Record event functions
+	PaintEventFunction = PaintEvent;																//Record event functions
 	MouseMoveEventFunction = MouseMoveEvent;
 	hWnd = CreateWindowEx(0, L"#32770", L"Canvas", WS_VISIBLE | WS_CHILD,
 		0, 0, 100, 100, ParentHwnd, (HMENU)NULL, GetProgramInstance(), NULL);
+	GetWindowRect(hWnd, &CtlRect);
 	CreateMemoryDC(100, 100);																		//Create initial memory DC
 	Cls();
 	SetProp(hWnd, L"Object", (HANDLE)this);															//Save a pointer to this class
 	PervWndProc = (WNDPROC)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc);					//Store previous window procedure and set the new procedure
-	SetBkMode(hDC, TRANSPARENT);																	//Make output text background be transparent
 }
 
 /*
@@ -328,7 +331,6 @@ Description:    Clean canvas
 void IceCanvas::Cls() {
 	RECT	rc = { 0, 0, bi.bmiHeader.biWidth, bi.bmiHeader.biHeight };
 	FillRect(hDC, &rc, ColorBrush);
-	InvalidateRect(hWnd, NULL, TRUE);
 }
 
 /*
@@ -337,10 +339,10 @@ Args:           Width: Pen width, default = 1
 				PenColor: Pen color, default = 0 (black)
 				PenStyle: Pen style, default = PS_SOLID (solid lines)
 */
-void IceCanvas::SetPenProps(int Width = 1, COLORREF PenColor = 0, int PenStyle = PS_SOLID) {
+void IceCanvas::SetPenProps(int Width, COLORREF PenColor, int PenStyle) {
 	if (CanvasPen)																					//Delete previous pen
 		DeleteObject(CanvasPen);
-	CreatePen(PenStyle, Width, PenColor);															//Create a new pen with specified style
+	CanvasPen = CreatePen(PenStyle, Width, PenColor);												//Create a new pen with specified style
 	SelectObject(hDC, CanvasPen);																	//Bind the new pen with memory DC
 }
 
@@ -396,8 +398,9 @@ LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 		DeleteDC(PrevHDC);
 		DeleteObject(PrevBmp);
 
-		//Invoke resize event
-		ThisCanvas->ResizeEventFunction(LOWORD(lParam), HIWORD(lParam));
+		//Invoke paint event
+		if (ThisCanvas->PaintEventFunction)
+			ThisCanvas->PaintEventFunction();
 
 		break;
 
@@ -408,10 +411,15 @@ LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 			ThisCanvas->bi.bmiHeader.biWidth,
 			ThisCanvas->bi.bmiHeader.biHeight,
 			ThisCanvas->hDC, 0, 0, SRCCOPY);
+
+		//Invoke paint event
+		if (ThisCanvas->PaintEventFunction)
+			ThisCanvas->PaintEventFunction();
 		return 0;
 
 	case WM_MOUSEMOVE:
-		ThisCanvas->MouseMoveEventFunction(LOWORD(lParam), HIWORD(lParam)); 
+		if (ThisCanvas->MouseMoveEventFunction)
+			ThisCanvas->MouseMoveEventFunction(LOWORD(lParam), HIWORD(lParam)); 
 		return 0;
 	}
 

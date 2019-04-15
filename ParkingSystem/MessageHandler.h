@@ -124,7 +124,6 @@ class IceCanvas : public BasicCtl {
 private:
 	HBRUSH				ColorBrush;				//Background color brush
 	HPEN				CanvasPen = 0;			//Pen of the canvas
-	BITMAPINFO			bi;						//Memory bitmap info strucutre
 	WNDPROC				PervWndProc;			//Previous window procedure
 
 	static LRESULT CALLBACK CanvasWndProc(HWND, UINT, WPARAM, LPARAM);
@@ -132,13 +131,14 @@ private:
 	void DeleteMemoryDC();
 
 public:
+	BITMAPINFO			bi;						//Memory bitmap info strucutre
 	HDC					hDC = 0;				//Canvas memory HDC
 	HBITMAP				hBmp = 0;				//Canvas memory bitmap
-	MOUSEMOVE_EVENT		ResizeEventFunction;	//Canvas_Paint() event
+	VOID_EVENT			PaintEventFunction;		//Canvas_Paint() event
 	MOUSEMOVE_EVENT		MouseMoveEventFunction;	//Canvas_MouseMove() event
 
 	IceCanvas(HWND ParentHwnd, COLORREF BackColor = 0xffffff,
-		MOUSEMOVE_EVENT ResizeEvent = NULL, MOUSEMOVE_EVENT MouseMoveEvent = NULL);
+		VOID_EVENT PaintEvent = NULL, MOUSEMOVE_EVENT MouseMoveEvent = NULL);
 	~IceCanvas();
 	void DestroyCanvas();
 	template <class ...Args> void Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams);
@@ -220,5 +220,4 @@ void IceCanvas::Print(int X, int Y, const wchar_t *FormatString, Args&&... Forma
 
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
 	TextOut(hDC, X, Y, buf, lstrlenW(buf));
-	InvalidateRect(hWnd, NULL, TRUE);
 }

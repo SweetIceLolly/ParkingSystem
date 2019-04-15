@@ -44,6 +44,7 @@ Value		Name				Description
 */
 char							CurrStatus = 0;
 char							nPasswordTried = 2;							//Password attempt times left
+int								TabHeaderHeight;							//Height of tab header
 
 /*
 Description:    Hide password-related controls
@@ -156,8 +157,10 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		btnLogin->Move(PasswordFramePos.x + 105, PasswordFramePos.y + 75);
 		btnCancelLogin->Move(PasswordFramePos.x + 190, PasswordFramePos.y + 75);
 	}
-	if (CurrStatus == 5 || CurrStatus == 0)									//Report viewing mode
+	if (CurrStatus == 5 || CurrStatus == 0) {								//Report viewing mode
 		tabReport->Size(Width, Height);
+		PositionReportCanvas->Size(Width, Height - TabHeaderHeight);
+	}
 }
 
 /*
@@ -378,6 +381,88 @@ void tmrRestoreWelcomeText_Timer() {
 }
 
 /*
+Description:	To handle paint event of position report canvas
+*/
+void PositionReportCanvas_Paint() {
+	//Calculate width and height of each position box
+	int BoxW = (PositionReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 / 10,
+		BoxH = (PositionReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+
+	//Paint
+	RECT	BoxPos;
+	PositionReportCanvas->Cls();
+	if (BoxW > 0 && BoxH > 0) {												//Make sure the window is large enough to draw everything
+		for (int i = 0; i < 10; i++) {											//Rows
+			for (int j = 0; j < 10; j++) {											//Columns
+				BoxPos.top = 30 + i * BoxH;												//Calculate the position of box
+				BoxPos.left = 30 + j * BoxW;
+				BoxPos.right = BoxPos.left + BoxW;
+				BoxPos.bottom = BoxPos.top + BoxH;
+				
+				if (ParkingPos[i * 10 + j])	{											//Position occupied
+					//Draw gray background with a cross
+					FillRect(PositionReportCanvas->hDC, &BoxPos, (HBRUSH)GetStockObject(LTGRAY_BRUSH));
+					PositionReportCanvas->DrawLine(BoxPos.left, BoxPos.top, BoxPos.right, BoxPos.bottom);
+					PositionReportCanvas->DrawLine(BoxPos.right, BoxPos.top, BoxPos.left, BoxPos.bottom);
+				}
+
+				//Draw border
+				PositionReportCanvas->DrawRect(BoxPos.left, BoxPos.top, BoxPos.right, BoxPos.bottom);
+
+				//Print number of position
+				PositionReportCanvas->Print(BoxPos.left, BoxPos.top, L"%i", i * 10 + j + 1);
+			}
+		}
+	}
+}
+
+/*
+Description:	To handle mouse move event of position report canvas
+*/
+void PositionReportCanvas_MouseMove(int X, int Y) {
+	//Calculate width and height of each position box
+	int PositionAreaWidth = (PositionReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
+	int BoxW = PositionAreaWidth / 10,
+		BoxH = (PositionReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+
+	//Calculate the car position under the cursor
+	int SelPosX = (X - 30) / BoxW;
+	int SelPosY = (Y - 30) / BoxH;
+	static int PrevPos = -1;												//Remember the previous selected car position to reduce CPU usage
+
+	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
+		if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
+			
+			return;
+		}
+
+		PrevPos = SelPosX + SelPosY * 10;										//Remember the current position
+		if (ParkingPos[PrevPos]) {												//Position occupied
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
+				L"Parking Position #%i:", PrevPos + 1);
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 50,
+				L"Status: Occupied");
+			
+			//Find out the number of occupied position, which is the index of CurrParkedCars
+			int nOccupiedPos = 0;
+			for (int i = PrevPos - 1; i >= 0; i--) {
+				if (ParkingPos[i])
+					nOccupiedPos++;
+			}
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 70,
+				L"Car Number: %s", LogFile->FileContent.LogData[CurrParkedCars[nOccupiedPos]].CarNumber);
+		}
+		else {																	//Position unoccupied
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
+				L"Parking Position #%i:", PrevPos + 1);
+			PositionReportCanvas->Print(PositionAreaWidth + 45, 50,
+				L"Status: Unoccupied");
+		}
+		InvalidateRect(PositionReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+	}
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create(HWND hWnd) {
@@ -396,7 +481,7 @@ void MainWindow_Create(HWND hWnd) {
 	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
 	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, (VOID_EVENT)NULL);
-	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, , );
+	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, PositionReportCanvas_Paint, PositionReportCanvas_MouseMove);
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
 	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
@@ -433,6 +518,14 @@ void MainWindow_Create(HWND hWnd) {
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
 	tabReport->InsertTab(L"Monthly Report");
+
+	//Set canvas positions
+	//There's a updown control in the tab control, so we can determine
+	//the height of tab header by retrieving the height of updown control
+	RECT	UpDownCtlRect;
+	GetWindowRect(FindWindowEx(tabReport->hWnd, NULL, L"msctls_updown32", NULL), &UpDownCtlRect);
+	TabHeaderHeight = UpDownCtlRect.bottom - UpDownCtlRect.top + 4;
+	PositionReportCanvas->Move(0, TabHeaderHeight);
 
 	//Load data file
 	LogFile = make_shared<IceEncryptedFile>(L"Log.dat");
@@ -548,7 +641,7 @@ void mnuLog_Click() {
 			lvLog->SetItemText(i, L"Still Parking", 3);
 
 		//Car position
-		lvLog->SetItemText(i, L"%i", 4, LogFile->FileContent.LogData[i].CarPos);
+		lvLog->SetItemText(i, L"%i", 4, LogFile->FileContent.LogData[i].CarPos + 1);
 	}
 	tabReport->SetVisible(false);											//Hide report tab
 	lvLog->SetVisible(true);												//Show log listview
@@ -574,6 +667,8 @@ void mnuReport_Click() {
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize tab control
+
+	PositionReportCanvas_Paint();											//Invoke canvas redraw
 }
 
 /*
