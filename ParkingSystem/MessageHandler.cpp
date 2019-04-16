@@ -266,6 +266,23 @@ LRESULT IceTab::InsertTab(wchar_t *Text, int Index) {
 	return (int)SendMessage(hWnd, TCM_INSERTITEM, Index, (LPARAM)&tci);
 }
 
+/*
+Description:    Get the selected tab index
+Return:			Index to of the selected tab
+*/
+int IceTab::GetSel() {
+	return (int)SendMessage(hWnd, TCM_GETCURSEL, 0, 0);
+}
+
+/*
+Description:    Set the selected tab index
+Args:			Index: Specific tab index
+Return:			The previously selected tab, or -1 otherwise
+*/
+int IceTab::SetSel(int Index) {
+	return SendMessage(hWnd, TCM_SETCURSEL, Index, 0);
+}
+
 //============================================================================
 /*
 Description:	Create memory DC & bitmap for canvas
@@ -474,17 +491,19 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     switch (uMsg) {
 	case WM_INITDIALOG:															//Window created
 		hwndMainWindow = hWnd;														//Record the window handle
-		//Invoke MainWindow_Create()
-		((void(*)(HWND))lParam)(hWnd);
+		((void(*)(HWND))lParam)(hWnd);												//Invoke MainWindow_Create()
+		break;
+
+	case WM_NOTIFY:
+		if (((NMHDR*)lParam)->code == TCN_SELCHANGE) {
+			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"SelectedTabEvent")))();	//Invoke Tab_SelectedTab()
+		}
 		break;
 
 	case WM_COMMAND:															//Control commands
 		if (lParam != 0) {															//Notification from a control
-			switch (HIWORD(wParam)) {													//Control notification code
-			case BN_CLICKED:																//Button clicked
-				//Invoke Button_Click()
-				((VOID_EVENT)(GetProp((HWND)lParam, L"ClickEvent")))();
-				break;
+			if (HIWORD(wParam) == BN_CLICKED) {											//Button clicked notification code															/
+				((VOID_EVENT)(GetProp((HWND)lParam, L"ClickEvent")))();						//Invoke Button_Click()
 			}
 		}
 		else {

@@ -117,6 +117,8 @@ class IceTab : public BasicCtl {
 public:
 	IceTab(HWND ParentHwnd, int CtlID, VOID_EVENT SelectedEvent);
 	LRESULT InsertTab(wchar_t *Text, int Index = -1);
+	int GetSel();
+	int SetSel(int Index);
 };
 
 /* Description:		Painting canvas class */

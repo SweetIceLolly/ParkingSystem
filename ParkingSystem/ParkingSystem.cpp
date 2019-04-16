@@ -15,6 +15,9 @@ shared_ptr<IceButton>			btnCancelLogin;
 shared_ptr<IceListView>			lvLog;
 shared_ptr<IceTab>				tabReport;
 shared_ptr<IceCanvas>			PositionReportCanvas;
+shared_ptr<IceCanvas>			HistoryReportCanvas;
+shared_ptr<IceCanvas>			DailyReportCanvas;
+shared_ptr<IceCanvas>			MonthlyReportCanvas;
 shared_ptr<IceLabel>			labPasswordIcon;
 shared_ptr<IceLabel>			labPassword;
 shared_ptr<IceLabel>			labWelcome;
@@ -35,12 +38,16 @@ bool							ParkingPos[100] = { 0 };					//Available parking positions (true = oc
 Program status identifier
 Value		Name				Description
 ----------------------------------------------------------------------------------------------
+-1			Stand by			Program initialization finished
 0			Normal mode			Initial status
 1			Payment mode		In payment mode, the program requires password to manage
 2			Log mode			Viewing log
 3			Unlocking mode		In payment mode, trying to unlock the program
 4			Locked				System locked, requires password to manage
-5			Report mode			Viewing report
+5			Position Report		Viewing position report
+6			History Report		Viewing history Report
+7			Daily Report		Viewing	daily Report
+8			Monthly Report		Viewing	monthly Report
 */
 char							CurrStatus = 0;
 char							nPasswordTried = 2;							//Password attempt times left
@@ -63,6 +70,7 @@ void HidePasswordFrame() {
 
 	SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window sizable
 		GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+	InvalidateRect(GetMainWindowHandle(), NULL, TRUE);
 }
 
 /*
@@ -79,6 +87,7 @@ void ShowPasswordFrame() {
 
 	SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window not sizable
 		GetWindowLong(GetMainWindowHandle(), GWL_STYLE) & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX);
+	InvalidateRect(GetMainWindowHandle(), NULL, TRUE);
 }
 
 /*
@@ -157,9 +166,21 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		btnLogin->Move(PasswordFramePos.x + 105, PasswordFramePos.y + 75);
 		btnCancelLogin->Move(PasswordFramePos.x + 190, PasswordFramePos.y + 75);
 	}
-	if (CurrStatus == 5 || CurrStatus == 0) {								//Report viewing mode
+	if (CurrStatus == 5 || CurrStatus == 0) {								//Viewing position report
 		tabReport->Size(Width, Height);
 		PositionReportCanvas->Size(Width, Height - TabHeaderHeight);
+	}
+	if (CurrStatus == 6 || CurrStatus == 0) {								//Viewing history report
+		tabReport->Size(Width, Height);
+		HistoryReportCanvas->Size(Width, Height - TabHeaderHeight);
+	}
+	if (CurrStatus == 7 || CurrStatus == 0) {								//Viewing daily report
+		tabReport->Size(Width, Height);
+		DailyReportCanvas->Size(Width, Height - TabHeaderHeight);
+	}
+	if (CurrStatus == 8 || CurrStatus == 0) {								//Viewing monthly report
+		tabReport->Size(Width, Height);
+		MonthlyReportCanvas->Size(Width, Height - TabHeaderHeight);
 	}
 }
 
@@ -191,6 +212,9 @@ void btnLogin_Click() {
 				}
 			}
 			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
+
+			//Update program status
+			CurrStatus = -1;
 		}
 		else {																	//Password incorrect
 			if (nPasswordTried--) {														//Decrease attempt times
@@ -218,7 +242,7 @@ void btnLogin_Click() {
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
 			SetMenu(GetMainWindowHandle(), hMenu);
 			DestroyMenu(hMenu);
-			CurrStatus = 0;
+			CurrStatus = -1;
 		}
 		else {																	//Password incorrect
 			if (nPasswordTried--) {
@@ -246,7 +270,7 @@ void btnLogin_Click() {
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
 			SetMenu(GetMainWindowHandle(), hMenu);
 			DestroyMenu(hMenu);
-			CurrStatus = 0;
+			CurrStatus = -1;
 		}
 		else {																	//Password incorrect
 			labPassword->SetText(L"Incorrect password!\nTry again.");
@@ -313,7 +337,7 @@ float CalcFee(SYSTEMTIME *EnterTime, SYSTEMTIME *LeaveTime, int *OutHourDifferen
 Description:	To handle enter & exit button event
 */
 void btnEnterOrExit_Click() {
-	wchar_t		CarNumber[10];												//Car number buffer
+	wchar_t		CarNumber[20];												//Car number buffer
 	SYSTEMTIME	CurrTime = { 0 };											//Current time
 
 	GetLocalTime(&CurrTime);												//Get current system time
@@ -357,6 +381,7 @@ void btnEnterOrExit_Click() {
 
 	//No matched result, means the car is entering
 	//Allocate a car position
+	bool PositionAllocated = false;											//If a position is allocated
 	for (int i = 0; i < 100; i++) {											//Find an unoccupied position
 		if (!ParkingPos[i]) {
 			ParkingPos[i] = true;												//Mark the position as occupied
@@ -364,10 +389,13 @@ void btnEnterOrExit_Click() {
 			LogFile->AddLog(CarNumber, CurrTime, { 0 }, i, 0);					//Add car enter log
 			CurrParkedCars.push_back(LogFile->FileContent.ElementCount - 1);	//Add the log index to the parked cars list
 			labPositionLeft->SetText(L"Position Left: %i", 100 - CurrParkedCars.size());
+			PositionAllocated = true;											//Mark that a position is allocated
 
 			break;
 		}
 	}
+	if (!PositionAllocated)													//No position allocated (Park fulled)
+		labWelcome->SetText(L"Sorry, No Position Left.");
 
 	//Clean the window
 	edCarNumber->SetText(L"");
@@ -432,6 +460,7 @@ void PositionReportCanvas_Paint() {
 
 /*
 Description:	To handle mouse move event of position report canvas
+Args:			X, Y: Position of cursor
 */
 void PositionReportCanvas_MouseMove(int X, int Y) {
 	//Calculate width and height of each position box
@@ -442,11 +471,16 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 	//Calculate the car position under the cursor
 	int SelPosX = (X - 30) / BoxW;
 	int SelPosY = (Y - 30) / BoxH;
-	static int PrevPos = -1;												//Remember the previous selected car position to reduce CPU usage
+	static int PrevPos = -2;												//Remember the previous selected car position to reduce CPU usage
 
 	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
 		if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
-			PrevPos = -1;
+			if (PrevPos != -1) {													//If the cursor is in the position area previously
+				PrevPos = -1;
+				PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
+					L"Occupied Positions: %i/100", CurrParkedCars.size());				//Show number of occupied positions
+				InvalidateRect(PositionReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+			}
 			return;
 		}
 
@@ -491,6 +525,101 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 }
 
 /*
+Description:	To handle paint event of history report canvas
+*/
+void HistoryReportCanvas_Paint() {
+
+}
+
+/*
+Description:	To handle mouse move event of history report canvas
+Args:			X, Y: Position of cursor
+*/
+void HistoryReportCanvas_MouseMove(int X, int Y) {
+
+}
+
+/*
+Description:	To handle paint event of daily report canvas
+*/
+void DailyReportCanvas_Paint() {
+
+}
+
+/*
+Description:	To handle mouse move event of daily report canvas
+Args:			X, Y: Position of cursor
+*/
+void DailyReportCanvas_MouseMove(int X, int Y) {
+
+}
+
+/*
+Description:	To handle paint event of monthly report canvas
+*/
+void MonthlyReportCanvas_Paint() {
+
+}
+
+/*
+Description:	To handle mouse move event of monthly report canvas
+Args:			X, Y: Position of cursor
+*/
+void MonthlyReportCanvas_MouseMove(int X, int Y) {
+
+}
+
+/*
+Description:	To handle tab selected event for report tab control
+*/
+void tabReport_TabSelected() {
+	switch (tabReport->GetSel()) {											//Get the index of selected tab
+	case 0:																	//Position report
+		CurrStatus = 5;
+		PositionReportCanvas->SetVisible(true);
+		HistoryReportCanvas->SetVisible(false);
+		DailyReportCanvas->SetVisible(false);
+		MonthlyReportCanvas->SetVisible(false);
+		PositionReportCanvas_Paint();											//Invoke canvas redraw
+		InvalidateRect(PositionReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+		break;
+
+	case 1:																	//History report
+		CurrStatus = 6;
+		PositionReportCanvas->SetVisible(false);
+		HistoryReportCanvas->SetVisible(true);
+		DailyReportCanvas->SetVisible(false);
+		MonthlyReportCanvas->SetVisible(false);
+		//HistoryReportCanvas_Paint();											//Invoke canvas redraw ToDo
+		break;
+
+	case 2:																	//Daily report
+		CurrStatus = 7;
+		PositionReportCanvas->SetVisible(false);
+		HistoryReportCanvas->SetVisible(false);
+		DailyReportCanvas->SetVisible(true);
+		MonthlyReportCanvas->SetVisible(false);
+		//DailyReportCanvas_Paint();												//Invoke canvas redraw
+		break;
+
+	case 3:																	//Monthly report
+		CurrStatus = 8;
+		PositionReportCanvas->SetVisible(false);
+		HistoryReportCanvas->SetVisible(false);
+		DailyReportCanvas->SetVisible(false);
+		MonthlyReportCanvas->SetVisible(true);
+		//MonthlyReportCanvas_Paint();											//Invoke canvas redraw
+		break;
+	}
+
+	RECT	MainWindowSize;
+	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
+	MainWindow_Resize(GetMainWindowHandle(),
+		MainWindowSize.right - MainWindowSize.left,
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize the canvas
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create(HWND hWnd) {
@@ -508,8 +637,11 @@ void MainWindow_Create(HWND hWnd) {
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
 	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
-	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, (VOID_EVENT)NULL);
+	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, tabReport_TabSelected);
 	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, PositionReportCanvas_Paint, PositionReportCanvas_MouseMove);
+	HistoryReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, HistoryReportCanvas_Paint, HistoryReportCanvas_MouseMove);
+	DailyReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, DailyReportCanvas_Paint, DailyReportCanvas_MouseMove);
+	MonthlyReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, MonthlyReportCanvas_Paint, MonthlyReportCanvas_MouseMove);
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
 	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
@@ -554,6 +686,12 @@ void MainWindow_Create(HWND hWnd) {
 	GetWindowRect(FindWindowEx(tabReport->hWnd, NULL, L"msctls_updown32", NULL), &UpDownCtlRect);
 	TabHeaderHeight = UpDownCtlRect.bottom - UpDownCtlRect.top + 4;
 	PositionReportCanvas->Move(0, TabHeaderHeight);
+	HistoryReportCanvas->Move(0, TabHeaderHeight);
+	HistoryReportCanvas->SetVisible(false);
+	DailyReportCanvas->Move(0, TabHeaderHeight);
+	DailyReportCanvas->SetVisible(false);
+	MonthlyReportCanvas->Move(0, TabHeaderHeight);
+	MonthlyReportCanvas->SetVisible(false);
 
 	//Load data file
 	LogFile = make_shared<IceEncryptedFile>(L"Log.dat");
@@ -569,6 +707,7 @@ void mnuLock_Click() {
 	CurrStatus = 4;															//Change status to locked mode
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	lvLog->SetVisible(false);												//Hide unrelated controls
+	tabReport->SetVisible(false);
 	ShowPasswordFrame();
 	SetFocus(edPassword->hWnd);
 }
@@ -688,15 +827,14 @@ Description:	To handle show report menu event
 void mnuReport_Click() {
 	lvLog->SetVisible(false);
 	tabReport->SetVisible(true);
-	CurrStatus = 5;
+	tabReport->SetSel(0);													//Set selected tab
+	tabReport_TabSelected();												//Invoke tab selected event to show canvas
 
 	RECT	MainWindowSize;
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
 	MainWindow_Resize(GetMainWindowHandle(),
 		MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize tab control
-
-	PositionReportCanvas_Paint();											//Invoke canvas redraw
 }
 
 /*
