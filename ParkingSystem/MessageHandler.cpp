@@ -213,7 +213,7 @@ Args:           Text: The text of the new column
 Return:			Index to of the new column if successful, or -1 otherwise
 */
 LRESULT IceListView::AddColumn(wchar_t *Text, int Width, int Index) {
-	LVCOLUMN	lvCol = { 0 };																	//Listview column info
+	LVCOLUMN	lvCol = { 0 };																	//ListView column info
 
 	lvCol.mask = LVCF_WIDTH | LVCF_TEXT | LVCF_FMT;												//Specific width, text and text alignment
 	lvCol.fmt = LVCFMT_LEFT;
@@ -495,8 +495,16 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_NOTIFY:
-		if (((NMHDR*)lParam)->code == TCN_SELCHANGE) {
-			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"SelectedTabEvent")))();	//Invoke Tab_SelectedTab()
+		switch (((NMHDR*)lParam)->code) {
+		case TCN_SELCHANGE:																//Tab selected
+			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"SelectedTabEvent")))();		//Invoke Tab_SelectedTab()
+			break;
+
+		case HDN_ITEMCLICK:																//ListView header clicked
+			if (((NMHEADER*)lParam)->iButton == 0)											//Left button clicked
+				//Invoke ListView_HeaderClicked()
+				((void(*)(int))(GetProp(((NMHDR*)lParam)->hwndFrom, L"HeaderClickEvent")))(((NMHEADER*)lParam)->iItem);
+			break;
 		}
 		break;
 

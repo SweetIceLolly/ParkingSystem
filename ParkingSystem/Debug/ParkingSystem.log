@@ -1,6 +1,20 @@
-﻿Build started 2019/4/17 1:23:17.
+﻿Build started 2019/4/20 22:12:14.
      1>Project "I:\EXEs\Programs\Source\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" on node 2 (Build target(s)).
-     1>Link:
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _USING_V110_SDK71_ /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ParkingSystem.cpp
+         ParkingSystem.cpp
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(135): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(138): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(141): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(142): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(144): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(145): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(147): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(148): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(150): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(151): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>i:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(337): warning C4244: 'return' : conversion from 'double' to 'float', possible loss of data
+       Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"I:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:ParkingSystem.exe.manifest /DEBUG /PDB:"I:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.pdb" /SUBSYSTEM:WINDOWS,"5.01" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"I:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.lib" /MACHINE:X86 Debug\ParkingSystem.res
          Debug\FileManager.obj
          Debug\MessageHandler.obj
@@ -11,4 +25,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.97
+Time Elapsed 00:00:03.35

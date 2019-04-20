@@ -102,7 +102,7 @@ public:
 	void GetText(wchar_t *Buffer);
 };
 
-/* Description:		Listview class */
+/* Description:		ListView class */
 class IceListView : public BasicCtl {
 public:
 	IceListView(HWND ParentHwnd, int CtlID);
@@ -175,7 +175,7 @@ Return:			TRUE if successful, or FALSE otherwise
 */
 template<class ...Args>
 LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
-	LVITEM		lvi = { 0 };					//Listview item info
+	LVITEM		lvi = { 0 };					//ListView item info
 	wchar_t		buf[255];
 
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
@@ -195,7 +195,7 @@ Return:			Index to of the new item if successful, or -1 otherwise
 */
 template<class ...Args>
 LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... FormatParams) {
-	LVITEM		lvi = { 0 };					//Listview item info
+	LVITEM		lvi = { 0 };					//ListView item info
 	wchar_t		buf[255];
 
 	if (Index == -1)																			//Add the item to the end
@@ -203,12 +203,11 @@ LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... F
 	else																						//Add the item to the specified index
 		lvi.iItem = Index;
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
-	lvi.mask = LVIF_TEXT;																		//Specific text
+	lvi.mask = LVIF_TEXT | LVIF_PARAM;															//Specific text
 	lvi.cchTextMax = lstrlenW(buf);
 	lvi.pszText = buf;
 	return SendMessage(hWnd, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 }
-
 
 /*
 Description:    Print a text on canvas

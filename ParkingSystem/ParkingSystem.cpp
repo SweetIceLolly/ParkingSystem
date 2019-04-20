@@ -7,6 +7,12 @@ File:           ParkingSystem.cpp
 
 #include "FileManager.h"
 
+/* ListView sorting info to be passed to ListViewCompareFunction */
+struct lvSortInfo {
+	bool						Ascending;									//Ascending or descending
+	int							HeaderIndex;								//Header index of ListView
+};
+
 /* Control bindings */
 shared_ptr<IceEncryptedFile>	LogFile;
 shared_ptr<IceEdit>				edPassword;
@@ -570,6 +576,43 @@ void MonthlyReportCanvas_MouseMove(int X, int Y) {
 }
 
 /*
+Description:	Comparison function of ListView item sorting
+Args:			lParam1: Current index of the first item
+				lParam2: Current index of the second item
+				lParamSort: Additional info specified by wParam of LVM_SORTITEMSEX message (Pointer to a lvSortInfo structure)
+Return:			A negative value if the first item should precede the second,
+				a positive value if the first item should follow the second,
+				or zero if the two items are equivalent
+*/
+int CALLBACK ListViewCompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
+	LVITEM	lvi1 = { 0 }, lvi2 = { 0 };										//ListView item info
+	wchar_t	buf1[255], buf2[255];											//Text buffer
+
+	lvi1.cchTextMax = lvi2.cchTextMax = 255;								//Set buffer text size
+	lvi1.iSubItem = lvi2.iSubItem = ((lvSortInfo*)lParamSort)->HeaderIndex;	//Set sub item index
+	lvi1.pszText = buf1;													//Set buffer address
+	lvi2.pszText = buf2;
+	SendMessage(lvLog->hWnd, LVM_GETITEMTEXT, lParam1, (LPARAM)&lvi1);
+	SendMessage(lvLog->hWnd, LVM_GETITEMTEXT, lParam2, (LPARAM)&lvi2);
+
+	if (((lvSortInfo*)lParamSort)->Ascending)								//Return value depends on sorting direction
+		return lstrcmpW(buf1, buf2);
+	else
+		return -lstrcmpW(buf1, buf2);
+}
+
+/*
+Description:	To handle log listview header clicked event
+*/
+void lvLog_HeaderClicked(int Index) {
+	static bool Ascending[5] = { true, true, true, true, true };			//Ascending or descending (initial = ascending)
+
+	Ascending[Index] = !Ascending[Index];									//Reverse sorting direction
+	lvSortInfo	si = { Ascending[Index], Index };							//Set sorting info
+	SendMessage(lvLog->hWnd, LVM_SORTITEMSEX, (WPARAM)&si, (LPARAM)ListViewCompareFunction);
+}
+
+/*
 Description:	To handle tab selected event for report tab control
 */
 void tabReport_TabSelected() {
@@ -590,7 +633,7 @@ void tabReport_TabSelected() {
 		HistoryReportCanvas->SetVisible(true);
 		DailyReportCanvas->SetVisible(false);
 		MonthlyReportCanvas->SetVisible(false);
-		//HistoryReportCanvas_Paint();											//Invoke canvas redraw ToDo
+		HistoryReportCanvas_Paint();											//Invoke canvas redraw
 		break;
 
 	case 2:																	//Daily report
@@ -599,7 +642,7 @@ void tabReport_TabSelected() {
 		HistoryReportCanvas->SetVisible(false);
 		DailyReportCanvas->SetVisible(true);
 		MonthlyReportCanvas->SetVisible(false);
-		//DailyReportCanvas_Paint();												//Invoke canvas redraw
+		DailyReportCanvas_Paint();												//Invoke canvas redraw
 		break;
 
 	case 3:																	//Monthly report
@@ -608,7 +651,7 @@ void tabReport_TabSelected() {
 		HistoryReportCanvas->SetVisible(false);
 		DailyReportCanvas->SetVisible(false);
 		MonthlyReportCanvas->SetVisible(true);
-		//MonthlyReportCanvas_Paint();											//Invoke canvas redraw
+		MonthlyReportCanvas_Paint();											//Invoke canvas redraw
 		break;
 	}
 
@@ -678,6 +721,7 @@ void MainWindow_Create(HWND hWnd) {
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
 	tabReport->InsertTab(L"Monthly Report");
+	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
 
 	//Set canvas positions
 	//There's a updown control in the tab control, so we can determine
