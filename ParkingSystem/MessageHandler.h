@@ -150,6 +150,13 @@ public:
 	void DrawRect(int X1, int Y1, int X2, int Y2);
 };
 
+/* Description:		Date/Time picker control class */
+class IceDateTimePicker : public BasicCtl {
+public:
+	IceDateTimePicker(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent);
+	bool GetTime(SYSTEMTIME *lpTime);
+};
+
 /* ==================================================================================================
    ======================================= Template functions ======================================= */
 

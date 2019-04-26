@@ -33,6 +33,10 @@ shared_ptr<IceLabel>			labPrice;
 shared_ptr<IceLabel>			labTime;
 shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
+shared_ptr<IceDateTimePicker>	dtpHistoryFromDate;
+shared_ptr<IceDateTimePicker>	dtpHistoryFromTime;
+shared_ptr<IceDateTimePicker>	dtpHistoryToDate;
+shared_ptr<IceDateTimePicker>	dtpHistoryToTime;
 shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
 HWND							fraPasswordFrame;							//Password frame control handle
@@ -534,7 +538,36 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 Description:	To handle paint event of history report canvas
 */
 void HistoryReportCanvas_Paint() {
+	//Calculate width and height of each position box
+	int BoxW = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 / 10,
+		BoxH = (HistoryReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
 
+	//Paint
+	RECT	BoxPos;
+	HistoryReportCanvas->Cls();
+	if (BoxW > 0 && BoxH > 0) {												//Make sure the window is large enough to draw everything
+		for (int i = 0; i < 10; i++) {											//Rows
+			for (int j = 0; j < 10; j++) {											//Columns
+				BoxPos.top = 30 + i * BoxH;												//Calculate the position of box
+				BoxPos.left = 30 + j * BoxW;
+				BoxPos.right = BoxPos.left + BoxW;
+				BoxPos.bottom = BoxPos.top + BoxH;
+
+				if (ParkingPos[i * 10 + j])	{											//Position occupied
+					//Draw gray background with a cross
+					FillRect(HistoryReportCanvas->hDC, &BoxPos, (HBRUSH)GetStockObject(LTGRAY_BRUSH));
+					HistoryReportCanvas->DrawLine(BoxPos.left, BoxPos.top, BoxPos.right, BoxPos.bottom);
+					HistoryReportCanvas->DrawLine(BoxPos.right, BoxPos.top, BoxPos.left, BoxPos.bottom);
+				}
+
+				//Draw border
+				HistoryReportCanvas->DrawRect(BoxPos.left, BoxPos.top, BoxPos.right, BoxPos.bottom);
+
+				//Print number of position
+				HistoryReportCanvas->Print(BoxPos.left, BoxPos.top, L"%i", i * 10 + j + 1);
+			}
+		}
+	}
 }
 
 /*
@@ -542,7 +575,65 @@ Description:	To handle mouse move event of history report canvas
 Args:			X, Y: Position of cursor
 */
 void HistoryReportCanvas_MouseMove(int X, int Y) {
+	//Calculate width and height of each position box
+	int PositionAreaWidth = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
+	int BoxW = PositionAreaWidth / 10,
+		BoxH = (HistoryReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
 
+	//Calculate the car position under the cursor
+	int SelPosX = (X - 30) / BoxW;
+	int SelPosY = (Y - 30) / BoxH;
+	static int PrevPos = -2;												//Remember the previous selected car position to reduce CPU usage
+
+	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
+		if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
+			if (PrevPos != -1) {													//If the cursor is in the position area previously
+				PrevPos = -1;
+				HistoryReportCanvas->Print(PositionAreaWidth + 45, 30,
+					L"Occupied Positions: %i/100", CurrParkedCars.size());				//Show number of occupied positions
+				InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+			}
+			return;
+		}
+
+		PrevPos = SelPosX + SelPosY * 10;										//Remember the current position
+		if (ParkingPos[PrevPos]) {												//Position occupied
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 30,
+				L"Parking Position #%i:", PrevPos + 1);
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 50,
+				L"Status: Occupied");
+
+			//Find out the number of occupied position, which is the index of CurrParkedCars
+			int nOccupiedPos = 0;
+			for (int i = PrevPos - 1; i >= 0; i--) {
+				if (ParkingPos[i])
+					nOccupiedPos++;
+			}
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 70,
+				L"Car Number: %s", LogFile->FileContent.LogData[CurrParkedCars[nOccupiedPos]].CarNumber);
+
+			//Show enter time & est. fee info
+			SYSTEMTIME stEnter = LogFile->FileContent.LogData[CurrParkedCars[nOccupiedPos]].EnterTime;
+			SYSTEMTIME stNow;
+			int HourDifference;
+
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 90,
+				L"Enter Time: %04u-%02u-%02u %02u:%02u:%02u",
+				stEnter.wYear, stEnter.wMonth, stEnter.wDay, stEnter.wHour, stEnter.wMinute, stEnter.wSecond);
+			GetLocalTime(&stNow);
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 130,
+				L"Estimated Fee (Until Now): $%.2f", CalcFee(&stEnter, &stNow, &HourDifference));
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 110,
+				L"Hours Parked (Until Now): %i", HourDifference);
+		}
+		else {																	//Position unoccupied
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 30,
+				L"Parking Position #%i:", PrevPos + 1);
+			HistoryReportCanvas->Print(PositionAreaWidth + 45, 50,
+				L"Status: Unoccupied");
+		}
+		InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+	}
 }
 
 /*
@@ -696,6 +787,10 @@ void MainWindow_Create(HWND hWnd) {
 	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
 	tmrRefreshTime = make_shared<IceTimer>(1000, tmrRefreshTime_Timer, true);
 	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
+	dtpHistoryFromDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYFROMDATEPICKER, (VOID_EVENT)NULL);
+	dtpHistoryFromTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYFROMTIMEPICKER, (VOID_EVENT)NULL);
+	dtpHistoryToDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTODATEPICKER, (VOID_EVENT)NULL);
+	dtpHistoryToTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTOTIMEPICKER, (VOID_EVENT)NULL);
 	fraPasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
 	
 	//Set control properties
@@ -721,6 +816,10 @@ void MainWindow_Create(HWND hWnd) {
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
 	tabReport->InsertTab(L"Monthly Report");
+	SetParent(dtpHistoryFromDate->hWnd, HistoryReportCanvas->hWnd);			//Set history date/time pickers as child window of history report canvas
+	SetParent(dtpHistoryFromTime->hWnd, HistoryReportCanvas->hWnd);
+	SetParent(dtpHistoryToDate->hWnd, HistoryReportCanvas->hWnd);
+	SetParent(dtpHistoryToTime->hWnd, HistoryReportCanvas->hWnd);
 	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
 
 	//Set canvas positions

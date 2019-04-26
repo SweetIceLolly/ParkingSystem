@@ -457,6 +457,26 @@ void IceCanvas::DestroyCanvas() {
 
 //============================================================================
 /*
+Description:    Constructor of the date/time picker control
+Args:           ParentHwnd: The parent window of the control
+				CtlID: Control ID, usually defined in resource.h
+				Event: TimePicker_TimeChanged() handler
+*/
+IceDateTimePicker::IceDateTimePicker(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
+	SetProp(hWnd, L"ChangedEvent", (HANDLE)ChangedEvent);
+}
+
+bool IceDateTimePicker::GetTime(SYSTEMTIME *lpTime) {
+	if (lpTime)																						//Check if lpTime is NULL pointer
+		return !SendMessage(hWnd, DTM_GETSYSTEMTIME, 0, (LPARAM)lpTime);								//The message returns GDT_VALID (0) if successful
+	else
+		return false;
+}
+
+//============================================================================
+/*
 Description:    This copys hInstance to ProgramInstance
 Args:           hInstance: Program hInstance
 */
@@ -505,6 +525,9 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				//Invoke ListView_HeaderClicked()
 				((void(*)(int))(GetProp(((NMHDR*)lParam)->hwndFrom, L"HeaderClickEvent")))(((NMHEADER*)lParam)->iItem);
 			break;
+
+		case DTN_DATETIMECHANGE:
+			//ToDo: TimePicker_¡¾hMenu¡¿_DateTimeChanged(((NMDATETIMECHANGE*)lParam)->st);
 		}
 		break;
 
