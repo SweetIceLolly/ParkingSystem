@@ -9,30 +9,29 @@ File:           FileManager.h
 
 using namespace std;
 
+/* Description:		Log record structure */
+struct LogInfo {
+	wchar_t			CarNumber[10];					//Car number
+	SYSTEMTIME		EnterTime;						//Enter time of the car
+	SYSTEMTIME		LeaveTime;						//Leave time of the car. If the car is not left, LeaveTime.wYear = 0
+	int				CarPos;							//Parked position
+	float			Fee;							//Fee paid
+};
+
+/* Description:		Encrypted file structure */
+struct RecordFile {
+	wchar_t			Password[20];					//User password
+	UINT			ElementCount;					//No. of elements of LogData
+	float			FeePerHour;						//Fee per hour
+	vector<LogInfo>	LogData;						//File content
+};
+
 /* Description:		Record file class */
 class IceEncryptedFile {
-private:
-	/* Description:		Log record structure */
-	struct LogInfo {
-		wchar_t			CarNumber[10];					//Car number
-		SYSTEMTIME		EnterTime;						//Enter time of the car
-		SYSTEMTIME		LeaveTime;						//Leave time of the car. If the car is not left, LeaveTime.wYear = 0
-		int				CarPos;							//Parked position
-		float			Fee;							//Fee paid
-	};
-
-	/* Description:		Encrypted file structure */
-	struct RecordFile {
-		wchar_t			Password[20];					//User password
-		UINT			ElementCount;					//No. of elements of LogData
-		float			FeePerHour;						//Fee per hour
-		vector<LogInfo>	LogData;						//File content
-	};
-
 public:
-	fstream			fsFile;								//File input/output stream
-	RecordFile		FileContent;						//Record file content
-	bool			WithoutFile = false;				//If the user selected continue without log file
+	fstream			fsFile;							//File input/output stream
+	RecordFile		FileContent;					//Record file content
+	bool			WithoutFile = false;			//If the user selected continue without log file
 
 	IceEncryptedFile(const wchar_t *FilePath);
 	~IceEncryptedFile();

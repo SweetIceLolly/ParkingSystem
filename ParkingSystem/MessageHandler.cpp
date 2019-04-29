@@ -517,7 +517,8 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_NOTIFY:
 		switch (((NMHDR*)lParam)->code) {
 		case TCN_SELCHANGE:																//Tab selected
-			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"SelectedTabEvent")))();		//Invoke Tab_SelectedTab()
+			//Invoke Tab_SelectedTab()
+			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"SelectedTabEvent")))();
 			break;
 
 		case HDN_ITEMCLICK:																//ListView header clicked
@@ -526,8 +527,10 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				((void(*)(int))(GetProp(((NMHDR*)lParam)->hwndFrom, L"HeaderClickEvent")))(((NMHEADER*)lParam)->iItem);
 			break;
 
-		case DTN_DATETIMECHANGE:
-			//ToDo: TimePicker_¡¾hMenu¡¿_DateTimeChanged(((NMDATETIMECHANGE*)lParam)->st);
+		case DTN_DATETIMECHANGE:														//TimePicker changed
+			//Invoke TimePicker_DateTimeChanged()
+			((void(*)())(GetProp(((NMHDR*)lParam)->hwndFrom, L"ChangedEvent")))();
+			break;
 		}
 		break;
 
