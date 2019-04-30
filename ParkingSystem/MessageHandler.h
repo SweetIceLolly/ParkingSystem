@@ -84,7 +84,7 @@ public:
 class IceLabel : public BasicCtl {
 public:
 	IceLabel(HWND ParentHwnd, int CtlID);
-	template<class ...Args> void SetText(const wchar_t *FormatString, Args&&... FormatParams);
+	template <class ...Args> void SetText(const wchar_t *FormatString, Args&&... FormatParams);
 };
 
 /* Description:		Button control class */
@@ -107,8 +107,8 @@ class IceListView : public BasicCtl {
 public:
 	IceListView(HWND ParentHwnd, int CtlID);
 	LRESULT AddColumn(wchar_t *Text, int Width = 100, int Index = -1);
-	template<class ...Args> LRESULT AddItem(const wchar_t *FormatString, int Index = -1, Args&&... FormatParams);
-	template<class ...Args> LRESULT SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex = 0, Args&&... FormatParams);
+	template <class ...Args> LRESULT AddItem(const wchar_t *FormatString, int Index = -1, Args&&... FormatParams);
+	template <class ...Args> LRESULT SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex = 0, Args&&... FormatParams);
 	void DeleteAllItems();
 };
 
@@ -128,7 +128,7 @@ private:
 	HPEN				CanvasPen = 0;			//Pen of the canvas
 	WNDPROC				PervWndProc;			//Previous window procedure
 
-	static LRESULT CALLBACK CanvasWndProc(HWND, UINT, WPARAM, LPARAM);
+	static LRESULT CALLBACK CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void CreateMemoryDC(int Width, int Height);
 	void DeleteMemoryDC();
 
@@ -152,9 +152,26 @@ public:
 
 /* Description:		Date/Time picker control class */
 class IceDateTimePicker : public BasicCtl {
+	/*ToDo: Add message handler for ERASEBKGND to redraw updown control */
 public:
 	IceDateTimePicker(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent);
 	bool GetTime(SYSTEMTIME *lpTime);
+	bool SetTime(SYSTEMTIME *lpTime);
+};
+
+/* Description:		Slider control class */
+class IceSlider : public BasicCtl {
+private:
+	static LRESULT CALLBACK SliderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+public:
+	IceSlider(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent);
+	void SetTickFreq(int TickFreq);
+	void SetMax(int Max);
+	void SetSmallChange(int SmallChange);
+	void SetLargeChange(int LargeChange);
+	void SetPos(int Pos);
+	int GetPos();
 };
 
 /* ==================================================================================================
@@ -165,7 +182,7 @@ Description:    Set the caption of the label control
 Args:           FormatString: Format string of new caption
 				FormatParams: String parameters
 */
-template<class ...Args>
+template <class ...Args>
 void IceLabel::SetText(const wchar_t *FormatString, Args&&... FormatParams) {
 	wchar_t buf[255];
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
@@ -180,7 +197,7 @@ Args:           Index: The index of the item
 				FormatParams: String parameters
 Return:			TRUE if successful, or FALSE otherwise
 */
-template<class ...Args>
+template <class ...Args>
 LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
 	LVITEM		lvi = { 0 };					//ListView item info
 	wchar_t		buf[255];
@@ -200,7 +217,7 @@ Args:           FormatString: Format string of the text of the new item
 				FormatParams: String parameters
 Return:			Index to of the new item if successful, or -1 otherwise
 */
-template<class ...Args>
+template <class ...Args>
 LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... FormatParams) {
 	LVITEM		lvi = { 0 };					//ListView item info
 	wchar_t		buf[255];

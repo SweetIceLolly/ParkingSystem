@@ -35,6 +35,7 @@ shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
 shared_ptr<IceDateTimePicker>	dtpHistoryDate;
 shared_ptr<IceDateTimePicker>	dtpHistoryTime;
+shared_ptr<IceSlider>			sliHistoryTime;
 shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
 HWND							fraPasswordFrame;							//Password frame control handle
@@ -186,11 +187,13 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		PositionReportCanvas->Size(Width, Height - TabHeaderHeight);
 	}
 	if (CurrStatus == 6 || CurrStatus == 0) {								//Viewing history report
+		int DrawPos = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
+
 		tabReport->Size(Width, Height);
 		HistoryReportCanvas->Size(Width, Height - TabHeaderHeight);
-		dtpHistoryDate->Move((HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 + 45, 30);
-		dtpHistoryTime->Move((HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 +
-			60 + dtpHistoryDate->CtlRect.right - dtpHistoryDate->CtlRect.left, 30);
+		dtpHistoryDate->Move(DrawPos + 45, 30);
+		dtpHistoryTime->Move(DrawPos + 60 + dtpHistoryDate->CtlRect.right - dtpHistoryDate->CtlRect.left, 30);
+		sliHistoryTime->Move(DrawPos + 45, 60);
 	}
 	if (CurrStatus == 7 || CurrStatus == 0) {								//Viewing daily report
 		tabReport->Size(Width, Height);
@@ -623,6 +626,14 @@ void dtpHistoryDate_DateTimeChanged() {
 }
 
 /*
+Description:	To handle value changed event for history time slider
+*/
+void sliHistoryTime_ValueChanged() {
+	int p = sliHistoryTime->GetPos();
+	
+}
+
+/*
 Description:	To handle mouse move event of history report canvas
 Args:			X, Y: Position of cursor
 */
@@ -640,7 +651,7 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 	if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
 		if (PrevPos != -1) {													//If the cursor is in the position area previously
 			PrevPos = -1;
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 70,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Occupied Positions: %i/100", HistoryParkedCarsCount);				//Show number of occupied positions
 			InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
 		}
@@ -650,9 +661,9 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
 		PrevPos = SelPosX + SelPosY * 10;										//Remember the current position
 		if (HistoryParkedCars[PrevPos].EnterTime.wYear) {						//Position occupied
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 70,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Parking Position #%i:", PrevPos + 1);
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 90,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 140,
 				L"Status: Occupied");
 
 			//Find out the number of occupied position, which is the index of CurrParkedCars
@@ -661,19 +672,19 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 				if (ParkingPos[i])
 					nOccupiedPos++;
 			}
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 110,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 160,
 				L"Car Number: %s", HistoryParkedCars[PrevPos].CarNumber);
 
 			//Show enter time & est. fee info
 			SYSTEMTIME stEnter = HistoryParkedCars[PrevPos].EnterTime;
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 130,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 180,
 				L"Enter Time: %04u-%02u-%02u %02u:%02u:%02u",
 				stEnter.wYear, stEnter.wMonth, stEnter.wDay, stEnter.wHour, stEnter.wMinute, stEnter.wSecond);
 		}
 		else {																	//Position unoccupied
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 70,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Parking Position #%i:", PrevPos + 1);
-			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 90,
+			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 140,
 				L"Status: Unoccupied");
 		}
 		InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
@@ -772,7 +783,7 @@ void tabReport_TabSelected() {
 		MonthlyReportCanvas->SetVisible(false);
 		dtpHistoryDate_DateTimeChanged();
 		HistoryReportCanvas_Paint();											//Invoke canvas redraw
-		HistoryReportCanvas->Print((HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 + 45, 70,
+		HistoryReportCanvas->Print((HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 + 45, 120,
 			L"Occupied Positions: %i/100", HistoryParkedCarsCount);				//Show number of occupied positions
 		InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
 		break;
@@ -839,6 +850,7 @@ void MainWindow_Create(HWND hWnd) {
 	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
 	dtpHistoryDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYDATEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
 	dtpHistoryTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTIMEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
+	sliHistoryTime = make_shared<IceSlider>(hWnd, IDC_HISTORYTIMESLIDER, (VOID_EVENT)sliHistoryTime_ValueChanged);
 	fraPasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
 	
 	//Set control properties
@@ -864,8 +876,13 @@ void MainWindow_Create(HWND hWnd) {
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
 	tabReport->InsertTab(L"Monthly Report");
-	SetParent(dtpHistoryDate->hWnd, HistoryReportCanvas->hWnd);				//Set history date/time pickers as child window of history report canvas
+	sliHistoryTime->SetMax(86399);											//Set max value of slider to (24 * 3600 - 1) seconds
+	sliHistoryTime->SetTickFreq(3600);										//Set tick frequency of slider to 1 hour
+	sliHistoryTime->SetLargeChange(3600);									//Set large change of slider to 1 hour
+	sliHistoryTime->SetSmallChange(300);									//Set small change of slider to 5 mins
+	SetParent(dtpHistoryDate->hWnd, HistoryReportCanvas->hWnd);				//Set history date/time pickers and slider as child window of history report canvas
 	SetParent(dtpHistoryTime->hWnd, HistoryReportCanvas->hWnd);
+	SetParent(sliHistoryTime->hWnd, HistoryReportCanvas->hWnd);
 	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
 
 	//Set canvas positions

@@ -480,18 +480,6 @@ bool IceDateTimePicker::GetTime(SYSTEMTIME *lpTime) {
 		return false;
 }
 
-/*
-Description:    Set time value of the control
-Args:           lpTime: Pointer to a SYSTEMTIME variable that stores the time value
-Return:			true if successful, false otherwise
-*/
-bool IceDateTimePicker::SetTime(SYSTEMTIME *lpTime) {
-	if (lpTime)
-		return SendMessage(hWnd, DTM_SETSYSTEMTIME, GDT_VALID, (LPARAM)lpTime);
-	else
-		return SendMessage(hWnd, DTM_SETSYSTEMTIME, GDT_NONE, (LPARAM)lpTime);
-}
-
 //============================================================================
 /*
 Description:    Constructor of the slider control
@@ -503,7 +491,7 @@ IceSlider::IceSlider(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent) {
 	hWnd = GetDlgItem(ParentHwnd, CtlID);
 	GetWindowRect(hWnd, &CtlRect);
 	SetProp(hWnd, L"ChangedEvent", (HANDLE)ChangedEvent);
-	SetProp(hWnd, L"PrevWndProc", (HANDLE)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)SliderWndProc));	//Store previous window procedure and set the new procedure
+	PrevEndProc = (WNDPROC)SetWindowLong(hWnd, GWL_WNDPROC, (LONG)CanvasWndProc);					//Store previous window procedure and set the new procedure
 }
 
 /*
@@ -514,12 +502,7 @@ Args:           hWnd: Handle to the window
 Return:         Result of message handling
 */
 LRESULT CALLBACK IceSlider::SliderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	if (uMsg == SBM_SETSCROLLINFO) {																//Slider value changed
-		((VOID_EVENT)(GetProp(hWnd, L"ChangedEvent")))();
-	}
-	
-	//Call the default window prodecure
-	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
+
 }
 
 /*
@@ -609,7 +592,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		((void(*)(HWND))lParam)(hWnd);												//Invoke MainWindow_Create()
 		break;
 
-	case WM_NOTIFY:																//Control notifications
+	case WM_NOTIFY:
 		switch (((NMHDR*)lParam)->code) {
 		case TCN_SELCHANGE:																//Tab selected
 			//Invoke Tab_SelectedTab()
@@ -624,14 +607,9 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 		case DTN_DATETIMECHANGE:														//TimePicker changed
 			//Invoke TimePicker_DateTimeChanged()
-			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"ChangedEvent")))();
+			((void(*)())(GetProp(((NMHDR*)lParam)->hwndFrom, L"ChangedEvent")))();
 			break;
 		}
-		break;
-
-	case WM_HSCROLL:
-	case WM_VSCROLL:															//Slider position changed
-		SetScrollPos((HWND)lParam, SB_CTL, GetScrollPos((HWND)lParam, SB_CTL), TRUE);	//Update slider position
 		break;
 
 	case WM_COMMAND:															//Control commands
@@ -675,12 +653,6 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		//Invoke Window_Resize()
 		MainWindow_Resize(hWnd, LOWORD(lParam), HIWORD(lParam));
 		break;
-
-	case WM_CTLCOLORSTATIC:														//Redrawing background of static controls
-		if ((int)GetMenu((HWND)lParam) == IDC_HISTORYTIMESLIDER)					//Handle this message for the slider control only
-			return (LRESULT)GetStockObject(WHITE_BRUSH);								//Return a white brush to draw the background
-		else
-			break;
 
 	case WM_CLOSE:																//Window closing
 		mnuExit_Click();
