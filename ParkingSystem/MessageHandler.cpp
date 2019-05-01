@@ -487,9 +487,9 @@ Return:			true if successful, false otherwise
 */
 bool IceDateTimePicker::SetTime(SYSTEMTIME *lpTime) {
 	if (lpTime)
-		return SendMessage(hWnd, DTM_SETSYSTEMTIME, GDT_VALID, (LPARAM)lpTime);
+		return SendMessage(hWnd, DTM_SETSYSTEMTIME, GDT_VALID, (LPARAM)lpTime) != 0;
 	else
-		return SendMessage(hWnd, DTM_SETSYSTEMTIME, GDT_NONE, (LPARAM)lpTime);
+		return SendMessage(hWnd, DTM_SETSYSTEMTIME, GDT_NONE, (LPARAM)lpTime) != 0;
 }
 
 //============================================================================
@@ -507,7 +507,7 @@ IceSlider::IceSlider(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent) {
 }
 
 /*
-Description:    Slider child window procedure
+Description:    Slider window procedure
 Args:           hWnd: Handle to the window
 				uMsg: Message code
 				wParam, lParam: Extra infos
@@ -516,6 +516,29 @@ Return:         Result of message handling
 LRESULT CALLBACK IceSlider::SliderWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (uMsg == SBM_SETSCROLLINFO) {																//Slider value changed
 		((VOID_EVENT)(GetProp(hWnd, L"ChangedEvent")))();
+	}
+	else if (uMsg == WM_MOUSEWHEEL) {																//Using mouse wheel to change slider value
+		int nPos = SendMessage(hWnd, TBM_GETPOS, 0, 0);													//Get current value
+
+		if ((short)HIWORD(wParam) > 0)																	//Modify value according to scroll direction
+			nPos += SendMessage(hWnd, TBM_GETLINESIZE, 0, 0);
+		else
+			nPos -= SendMessage(hWnd, TBM_GETLINESIZE, 0, 0);
+		
+		SendMessage(hWnd, TBM_SETPOS, TRUE, nPos);														//Set new value
+		SetScrollPos(hWnd, SB_CTL, nPos, TRUE);															//Raise value changed event
+		return 0;																						//Don't use system default procedure
+	}
+	else if (uMsg == WM_KEYDOWN) {																	//Using keyboard to change slider value
+		//Invert some keys to make it more user-friendly
+		if (wParam == VK_UP)																			//Invert Up key and Down key
+			wParam = VK_DOWN;
+		else if (wParam == VK_DOWN)
+			wParam = VK_UP;
+		else if (wParam == VK_PRIOR)																	//Invert PageUp key and PageDown key
+			wParam = VK_NEXT;
+		else if (wParam == VK_NEXT)
+			wParam = VK_PRIOR;
 	}
 	
 	//Call the default window prodecure
@@ -543,7 +566,7 @@ Description:    Set change in value per small change
 Args:           SmallChange: Change in value per small changes
 */
 void IceSlider::SetSmallChange(int SmallChange) {
-	SendMessage(hWnd, TBM_SETLINESIZE, TRUE, SmallChange);
+	SendMessage(hWnd, TBM_SETLINESIZE, 0, SmallChange);
 }
 
 /*
@@ -551,7 +574,7 @@ Description:    Set change in value per large change
 Args:           SmallChange: Change in value per large changes
 */
 void IceSlider::SetLargeChange(int LargeChange) {
-	SendMessage(hWnd, TBM_SETPAGESIZE, TRUE, LargeChange);
+	SendMessage(hWnd, TBM_SETPAGESIZE, 0, LargeChange);
 }
 
 /*
@@ -559,7 +582,7 @@ Description:    Set position of the slider
 Args:           Pos: New position
 */
 void IceSlider::SetPos(int Pos) {
-	SendMessage(hWnd, TBM_SETPOS, TRUE, (LPARAM)Pos);
+	SendMessage(hWnd, TBM_SETPOS, TRUE, Pos);
 }
 
 /*
@@ -631,7 +654,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_HSCROLL:
 	case WM_VSCROLL:															//Slider position changed
-		SetScrollPos((HWND)lParam, SB_CTL, GetScrollPos((HWND)lParam, SB_CTL), TRUE);	//Update slider position
+		SetScrollPos((HWND)lParam, SB_CTL, HIWORD(wParam), TRUE);					//Update slider position
 		break;
 
 	case WM_COMMAND:															//Control commands

@@ -623,14 +623,22 @@ void dtpHistoryDate_DateTimeChanged() {
 
 	HistoryReportCanvas_Paint();												//Invoke canvas redraw
 	InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);						//Refresh canvas
+	InvalidateRect(FindWindowEx(dtpHistoryTime->hWnd, NULL, L"msctls_updown32", NULL), NULL, TRUE);
 }
 
 /*
 Description:	To handle value changed event for history time slider
 */
 void sliHistoryTime_ValueChanged() {
-	int p = sliHistoryTime->GetPos();
-	
+	SYSTEMTIME	st;
+	int			SliderValue = sliHistoryTime->GetPos();							//Get new slider value
+
+	dtpHistoryDate->GetTime(&st);
+	st.wHour = SliderValue / 60;												//Convert slider value to time
+	st.wMinute = SliderValue % 60;
+	st.wSecond = 0;
+	dtpHistoryTime->SetTime(&st);												//Set new time value
+	dtpHistoryDate_DateTimeChanged();											//Apply the new time
 }
 
 /*
@@ -654,6 +662,7 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Occupied Positions: %i/100", HistoryParkedCarsCount);				//Show number of occupied positions
 			InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+			InvalidateRect(FindWindowEx(dtpHistoryTime->hWnd, NULL, L"msctls_updown32", NULL), NULL, TRUE);
 		}
 		return;
 	}
@@ -688,6 +697,7 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 				L"Status: Unoccupied");
 		}
 		InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+		InvalidateRect(FindWindowEx(dtpHistoryTime->hWnd, NULL, L"msctls_updown32", NULL), NULL, TRUE);
 	}
 }
 
@@ -786,6 +796,7 @@ void tabReport_TabSelected() {
 		HistoryReportCanvas->Print((HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 + 45, 120,
 			L"Occupied Positions: %i/100", HistoryParkedCarsCount);				//Show number of occupied positions
 		InvalidateRect(HistoryReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
+		InvalidateRect(FindWindowEx(dtpHistoryTime->hWnd, NULL, L"msctls_updown32", NULL), NULL, TRUE);
 		break;
 
 	case 2:																	//Daily report
@@ -876,17 +887,17 @@ void MainWindow_Create(HWND hWnd) {
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
 	tabReport->InsertTab(L"Monthly Report");
-	sliHistoryTime->SetMax(86399);											//Set max value of slider to (24 * 3600 - 1) seconds
-	sliHistoryTime->SetTickFreq(3600);										//Set tick frequency of slider to 1 hour
-	sliHistoryTime->SetLargeChange(3600);									//Set large change of slider to 1 hour
-	sliHistoryTime->SetSmallChange(300);									//Set small change of slider to 5 mins
+	sliHistoryTime->SetMax(1439);											//Set max value of slider to (24 * 60 - 1) minutes
+	sliHistoryTime->SetTickFreq(60);										//Set tick frequency of slider to 1 hour
+	sliHistoryTime->SetLargeChange(30);										//Set large change of slider to 1 hour
+	sliHistoryTime->SetSmallChange(1);										//Set small change of slider to 1 min
 	SetParent(dtpHistoryDate->hWnd, HistoryReportCanvas->hWnd);				//Set history date/time pickers and slider as child window of history report canvas
 	SetParent(dtpHistoryTime->hWnd, HistoryReportCanvas->hWnd);
 	SetParent(sliHistoryTime->hWnd, HistoryReportCanvas->hWnd);
 	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
 
 	//Set canvas positions
-	//There's a updown control in the tab control, so we can determine
+	//There's an updown control in the tab control, so we can determine
 	//the height of tab header by retrieving the height of updown control
 	RECT	UpDownCtlRect;
 	GetWindowRect(FindWindowEx(tabReport->hWnd, NULL, L"msctls_updown32", NULL), &UpDownCtlRect);

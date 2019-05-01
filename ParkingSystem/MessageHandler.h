@@ -152,7 +152,6 @@ public:
 
 /* Description:		Date/Time picker control class */
 class IceDateTimePicker : public BasicCtl {
-	/*ToDo: Add message handler for ERASEBKGND to redraw updown control */
 public:
 	IceDateTimePicker(HWND ParentHwnd, int CtlID, VOID_EVENT ChangedEvent);
 	bool GetTime(SYSTEMTIME *lpTime);
