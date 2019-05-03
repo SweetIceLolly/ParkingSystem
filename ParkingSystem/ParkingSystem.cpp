@@ -35,6 +35,7 @@ shared_ptr<IceEdit>				edCarNumber;
 shared_ptr<IceButton>			btnEnterOrExit;
 shared_ptr<IceDateTimePicker>	dtpHistoryDate;
 shared_ptr<IceDateTimePicker>	dtpHistoryTime;
+shared_ptr<IceDateTimePicker>	dtpDailyDate;
 shared_ptr<IceSlider>			sliHistoryTime;
 shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
@@ -47,6 +48,11 @@ bool							ParkingPos[100] = { 0 };					//Available parking positions (true = oc
 /* History report related */
 LogInfo							HistoryParkedCars[100] = { 0 };				//Parked cars record for history report
 int								HistoryParkedCarsCount = 0;					//Number of parked cars for history report
+
+/* Daily report related */
+int								DailyHourFreq[24] = { 0 };					//Number of parked cars at every hour for daily report
+int								DailyEnter, DailyExit;						//Number of enter/exit cars for daily report
+int								DailyIncome;								//Income of a day for daily report
 
 /*
 Program status identifier
@@ -135,7 +141,7 @@ void ShowPaymentFrame() {
 /*
 Description:    To handle main window resizing event
 */
-void MainWindow_Resize(HWND hWnd, int Width, int Height) {
+void MainWindow_Resize(int Width, int Height) {
 	//For initial status, resize all controls
 	//That's why I don't add 'else' before 'if'
 	if (CurrStatus == 1 || CurrStatus == 0) {								//Payment mode
@@ -167,6 +173,7 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		//Change unlocking mode controls positions by ratio
 		RECT	PasswordFrameRect;
 		POINT	PasswordFramePos;
+
 		GetWindowRect(fraPasswordFrame, &PasswordFrameRect);					//Get password frame size
 		SetWindowPos(fraPasswordFrame, HWND_BOTTOM,
 			Width / 2 - (PasswordFrameRect.right - PasswordFrameRect.left) / 2,
@@ -187,10 +194,11 @@ void MainWindow_Resize(HWND hWnd, int Width, int Height) {
 		PositionReportCanvas->Size(Width, Height - TabHeaderHeight);
 	}
 	if (CurrStatus == 6 || CurrStatus == 0) {								//Viewing history report
-		int DrawPos = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
+		int DrawPos;
 
 		tabReport->Size(Width, Height);
 		HistoryReportCanvas->Size(Width, Height - TabHeaderHeight);
+		DrawPos = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
 		dtpHistoryDate->Move(DrawPos + 45, 30);
 		dtpHistoryTime->Move(DrawPos + 60 + dtpHistoryDate->CtlRect.right - dtpHistoryDate->CtlRect.left, 30);
 		sliHistoryTime->Move(DrawPos + 45, 60);
@@ -454,7 +462,7 @@ void PositionReportCanvas_Paint() {
 	//Paint
 	RECT	BoxPos;
 	PositionReportCanvas->Cls();
-	if (BoxW > 0 && BoxH > 0) {												//Make sure the window is large enough to draw everything
+	if (BoxW > 16 && BoxH > 16) {												//Make sure the window is large enough to draw everything
 		for (int i = 0; i < 10; i++) {											//Rows
 			for (int j = 0; j < 10; j++) {											//Columns
 				BoxPos.top = 30 + i * BoxH;												//Calculate the position of box
@@ -488,6 +496,9 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 	int PositionAreaWidth = (PositionReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
 	int BoxW = PositionAreaWidth / 10,
 		BoxH = (PositionReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+
+	if (BoxW <= 16 || BoxH <= 16)											//The region is too small
+		return;
 
 	//Calculate the car position under the cursor
 	int SelPosX = (X - 30) / BoxW;
@@ -557,7 +568,7 @@ void HistoryReportCanvas_Paint() {
 	RECT	BoxPos;
 	HistoryReportCanvas->Cls();
 	
-	if (BoxW > 0 && BoxH > 0) {												//Make sure the window is large enough to draw everything
+	if (BoxW > 16 && BoxH > 16) {												//Make sure the window is large enough to draw everything
 		for (int i = 0; i < 10; i++) {											//Rows
 			for (int j = 0; j < 10; j++) {											//Columns
 				BoxPos.top = 30 + i * BoxH;												//Calculate the position of box
@@ -598,6 +609,7 @@ void dtpHistoryDate_DateTimeChanged() {
 	stSelectedTime.wHour = stTmp.wHour;
 	stSelectedTime.wMinute = stTmp.wMinute;
 	stSelectedTime.wSecond = stTmp.wSecond;
+	sliHistoryTime->SetPos(stSelectedTime.wHour * 60 + stSelectedTime.wMinute);	//Set slider value
 
 	memset(HistoryParkedCars, 0, sizeof(LogInfo) * 100);						//Initialize history parked cars array
 	HistoryParkedCarsCount = 0;													//Reset number of parked cars
@@ -651,6 +663,9 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 	int BoxW = HistoryAreaWidth / 10,
 		BoxH = (HistoryReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
 
+	if (BoxW <= 16 || BoxH <= 16)											//The region is too small
+		return;
+
 	//Calculate the car position under the cursor
 	int SelPosX = (X - 30) / BoxW;
 	int SelPosY = (Y - 30) / BoxH;
@@ -702,10 +717,34 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 }
 
 /*
+Description:	To handle date changed event of date picker of daily report
+*/
+void dtpDailyDate_DateTimeChanged() {
+	SYSTEMTIME	stSelectedTime;													//The time user selected
+
+	dtpDailyDate->GetTime(&stSelectedTime);										//Get selected date from date picker
+	/* ToDo: Calculate statistics */
+}
+
+/*
 Description:	To handle paint event of daily report canvas
 */
 void DailyReportCanvas_Paint() {
+	//Find best-fit width and height of the graph
+	const int MARGIN = 30;
+	int GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,
+		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 120;
 
+	//Paint
+	DailyReportCanvas->Cls();
+	if (GraphH < 30 || GraphW < 30)																//Area too small to paint
+		return;
+	DailyReportCanvas->DrawLine(MARGIN, MARGIN + GraphH, MARGIN + GraphW, MARGIN + GraphH);		//Draw X, Y axis
+	DailyReportCanvas->DrawLine(MARGIN + GraphW - 10, MARGIN + GraphH - 5, MARGIN + GraphW, MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(MARGIN + GraphW - 10, MARGIN + GraphH + 5, MARGIN + GraphW, MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(MARGIN, MARGIN, MARGIN, MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(MARGIN - 5, MARGIN + 10, MARGIN, MARGIN);
+	DailyReportCanvas->DrawLine(MARGIN + 5, MARGIN + 10, MARGIN, MARGIN);
 }
 
 /*
@@ -820,8 +859,7 @@ void tabReport_TabSelected() {
 
 	RECT	MainWindowSize;
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
-	MainWindow_Resize(GetMainWindowHandle(),
-		MainWindowSize.right - MainWindowSize.left,
+	MainWindow_Resize(MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize the canvas
 }
 
@@ -861,6 +899,7 @@ void MainWindow_Create(HWND hWnd) {
 	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
 	dtpHistoryDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYDATEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
 	dtpHistoryTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTIMEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
+	dtpDailyDate = make_shared<IceDateTimePicker>(hWnd, IDC_DAILYDATEPICKER, (VOID_EVENT)dtpDailyDate_DateTimeChanged);
 	sliHistoryTime = make_shared<IceSlider>(hWnd, IDC_HISTORYTIMESLIDER, (VOID_EVENT)sliHistoryTime_ValueChanged);
 	fraPasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
 	
@@ -891,8 +930,9 @@ void MainWindow_Create(HWND hWnd) {
 	sliHistoryTime->SetTickFreq(60);										//Set tick frequency of slider to 1 hour
 	sliHistoryTime->SetLargeChange(30);										//Set large change of slider to 1 hour
 	sliHistoryTime->SetSmallChange(1);										//Set small change of slider to 1 min
-	SetParent(dtpHistoryDate->hWnd, HistoryReportCanvas->hWnd);				//Set history date/time pickers and slider as child window of history report canvas
+	SetParent(dtpHistoryDate->hWnd, HistoryReportCanvas->hWnd);				//Set date/time pickers and slider as child window of canvases
 	SetParent(dtpHistoryTime->hWnd, HistoryReportCanvas->hWnd);
+	SetParent(dtpDailyDate->hWnd, DailyReportCanvas->hWnd);
 	SetParent(sliHistoryTime->hWnd, HistoryReportCanvas->hWnd);
 	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
 
@@ -940,8 +980,7 @@ void mnuExit_Click() {
 
 		RECT	MainWindowSize;
 		GetClientRect(GetMainWindowHandle(), &MainWindowSize);				//Get window size
-		MainWindow_Resize(GetMainWindowHandle(),
-			MainWindowSize.right - MainWindowSize.left,
+		MainWindow_Resize(MainWindowSize.right - MainWindowSize.left,
 			MainWindowSize.bottom - MainWindowSize.top);					//Invoke window resize event to center password frame
 
 		SetFocus(edPassword->hWnd);											//Let the password editbox has focus
@@ -982,8 +1021,7 @@ void mnuEnterPaymentMode_Click() {
 
 	RECT	MainWindowSize;
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
-	MainWindow_Resize(GetMainWindowHandle(),
-		MainWindowSize.right - MainWindowSize.left,
+	MainWindow_Resize(MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize payment controls
 }
 
@@ -1033,9 +1071,15 @@ void mnuLog_Click() {
 
 	RECT	MainWindowSize;
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
-	MainWindow_Resize(GetMainWindowHandle(),
-		MainWindowSize.right - MainWindowSize.left,
+	MainWindow_Resize(MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize listview
+}
+
+/*
+Description:	To handle search log menu event
+*/
+void mnuSearchLog_Click() {
+
 }
 
 /*
@@ -1049,8 +1093,7 @@ void mnuReport_Click() {
 
 	RECT	MainWindowSize;
 	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
-	MainWindow_Resize(GetMainWindowHandle(),
-		MainWindowSize.right - MainWindowSize.left,
+	MainWindow_Resize(MainWindowSize.right - MainWindowSize.left,
 		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize tab control
 }
 

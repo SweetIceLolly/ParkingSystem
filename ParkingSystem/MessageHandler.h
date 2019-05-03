@@ -32,9 +32,10 @@ void mnuParkClosed_Click();
 void mnuOptions_Click();
 void mnuHowToUse_Click();
 void mnuAbout_Click();
+void mnuSearchLog_Click();
 
 /* Main window events */
-void MainWindow_Resize(HWND, int, int);			//Window_Resize
+void MainWindow_Resize(int, int);				//Window_Resize
 void btnLogin_Click();							//Login button click
 void btnEnterOrExit_Click();					//Car enter/exit button click
 

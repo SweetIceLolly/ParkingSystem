@@ -670,6 +670,10 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					mnuLog_Click();
 					break;
 
+				case ID_FILE_SEARCHLOG:															//Search for parking log
+					mnuSearchLog_Click();
+					break;
+
 				case ID_FILE_REPORT:															//Show parking report
 					mnuReport_Click();
 					break;
@@ -696,7 +700,7 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_SIZE:																//Window resizing
 		//Invoke Window_Resize()
-		MainWindow_Resize(hWnd, LOWORD(lParam), HIWORD(lParam));
+		MainWindow_Resize(LOWORD(lParam), HIWORD(lParam));
 		break;
 
 	case WM_CTLCOLORSTATIC:														//Redrawing background of static controls
