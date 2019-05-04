@@ -13,6 +13,13 @@ struct lvSortInfo {
 	int							HeaderIndex;								//Header index of ListView
 };
 
+/* Overload >= operator for comparing date easier */
+/* I don't need other comparison operators so I don't overload them (#^.^#) */
+bool operator>=(SYSTEMTIME st1, SYSTEMTIME st2) {
+	return ((UINT)(st1.wYear * 365 * 24 * 3600 + st1.wMonth * 31 * 24 * 3600 + st1.wDay * 24 * 3600 + st1.wHour * 3600 + st1.wMinute * 60 + st1.wSecond) >=
+		(UINT)(st2.wYear * 365 * 24 * 3600 + st2.wMonth * 31 * 24 * 3600 + st2.wDay * 24 * 3600 + st2.wHour * 3600 + st2.wMinute * 60 + st2.wSecond));
+}
+
 /* Control bindings */
 shared_ptr<IceEncryptedFile>	LogFile;
 shared_ptr<IceEdit>				edPassword;
@@ -52,7 +59,7 @@ int								HistoryParkedCarsCount = 0;					//Number of parked cars for history r
 /* Daily report related */
 int								DailyHourFreq[24] = { 0 };					//Number of parked cars at every hour for daily report
 int								DailyEnter, DailyExit;						//Number of enter/exit cars for daily report
-int								DailyIncome;								//Income of a day for daily report
+float							DailyIncome;								//Income of a day for daily report
 
 /*
 Program status identifier
@@ -619,15 +626,7 @@ void dtpHistoryDate_DateTimeChanged() {
 		//If Enter Time <= Selected Time <= Leave Time,
 		//the car is in the park at the specified time
 		//Note that (wYear == 0) means the car is still parking
-		if (((UINT)(CarInfo.EnterTime.wYear * 365 * 24 * 3600 + CarInfo.EnterTime.wMonth * 31 * 24 * 3600 + CarInfo.EnterTime.wDay * 24 * 3600 +
-			CarInfo.EnterTime.wHour * 3600 + CarInfo.EnterTime.wMinute * 60 + CarInfo.EnterTime.wSecond) <=
-			(UINT)(stSelectedTime.wYear * 365 * 24 * 3600 + stSelectedTime.wMonth * 31 * 24 * 3600 + stSelectedTime.wDay * 24 * 3600 +
-			stSelectedTime.wHour * 3600 + stSelectedTime.wMinute * 60 + stSelectedTime.wSecond)) && (
-			((UINT)CarInfo.LeaveTime.wYear * 365 * 24 * 3600 + CarInfo.LeaveTime.wMonth * 31 * 24 * 3600 + CarInfo.LeaveTime.wDay * 24 * 3600 +
-			CarInfo.LeaveTime.wHour * 3600 + CarInfo.LeaveTime.wMinute * 60 + CarInfo.LeaveTime.wSecond >=
-			(UINT)(stSelectedTime.wYear * 365 * 24 * 3600 + stSelectedTime.wMonth * 31 * 24 * 3600 + stSelectedTime.wDay * 24 * 3600 +
-			stSelectedTime.wHour * 3600 + stSelectedTime.wMinute * 60 + stSelectedTime.wSecond)) || (CarInfo.LeaveTime.wYear == 0))) {
-			
+		if (stSelectedTime >= CarInfo.EnterTime && ((CarInfo.LeaveTime >= stSelectedTime) || (CarInfo.LeaveTime.wYear == 0))) {
 			HistoryParkedCars[CarInfo.CarPos] = CarInfo;								//Record car info
 			HistoryParkedCarsCount++;													//Number of parked cars + 1
 		}
@@ -721,9 +720,48 @@ Description:	To handle date changed event of date picker of daily report
 */
 void dtpDailyDate_DateTimeChanged() {
 	SYSTEMTIME	stSelectedTime;													//The time user selected
+	SYSTEMTIME	stCurrentTime;													//Current system time
+	LogInfo		*lpCurrLog;														//Pointer to current log
+
+	//Initialize variables
+	memset(DailyHourFreq, 0, sizeof(int) * 24);
+	DailyEnter = DailyExit = DailyIncome = 0;
+	GetLocalTime(&stCurrentTime);												//Get current system time
 
 	dtpDailyDate->GetTime(&stSelectedTime);										//Get selected date from date picker
-	/* ToDo: Calculate statistics */
+	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
+		if (lpCurrLog->EnterTime.wYear == stSelectedTime.wYear &&
+			lpCurrLog->EnterTime.wMonth == stSelectedTime.wMonth &&
+			lpCurrLog->EnterTime.wDay == stSelectedTime.wDay) {						//The car entered in the specified date
+
+			DailyEnter++;
+		}
+		if (lpCurrLog->LeaveTime.wYear == stSelectedTime.wYear &&
+			lpCurrLog->LeaveTime.wMonth == stSelectedTime.wMonth &&
+			lpCurrLog->LeaveTime.wDay == stSelectedTime.wDay) {						//The car left in the specified date
+
+			DailyExit++;
+			DailyIncome += lpCurrLog->Fee;
+		}
+		for (int Hour = 0; Hour < 24; Hour++) {										//Find if the car is parking at specified hour
+			//The time is greater than current date
+			if (stSelectedTime.wYear >= stCurrentTime.wYear && stSelectedTime.wMonth >= stCurrentTime.wMonth &&
+				stSelectedTime.wDay >= stCurrentTime.wDay && Hour > stCurrentTime.wHour)
+				break;
+
+			stSelectedTime.wHour = Hour;
+			//Ignore minute and second values
+			stSelectedTime.wMinute = lpCurrLog->EnterTime.wMinute = lpCurrLog->LeaveTime.wMinute =
+				stSelectedTime.wSecond = lpCurrLog->EnterTime.wSecond = lpCurrLog->LeaveTime.wSecond = 0;
+			//If Enter Time <= Specified Time <= Leave Time,
+			//the car is in the park at the specified time
+			//Note that (wYear == 0) means the car is still parking
+			if (stSelectedTime >= lpCurrLog->EnterTime && ((lpCurrLog->EnterTime >= stSelectedTime) || (lpCurrLog->LeaveTime.wYear == 0)))
+				DailyHourFreq[Hour]++;													//Count carks at every hour
+		}
+	}
+	DailyEnter = DailyEnter;
 }
 
 /*
@@ -745,6 +783,7 @@ void DailyReportCanvas_Paint() {
 	DailyReportCanvas->DrawLine(MARGIN, MARGIN, MARGIN, MARGIN + GraphH);
 	DailyReportCanvas->DrawLine(MARGIN - 5, MARGIN + 10, MARGIN, MARGIN);
 	DailyReportCanvas->DrawLine(MARGIN + 5, MARGIN + 10, MARGIN, MARGIN);
+	/* ToDo: draw the graph with other color line and X, Y labels */
 }
 
 /*
