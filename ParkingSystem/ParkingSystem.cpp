@@ -58,6 +58,7 @@ int								HistoryParkedCarsCount = 0;					//Number of parked cars for history r
 
 /* Daily report related */
 int								DailyHourFreq[24] = { 0 };					//Number of parked cars at every hour for daily report
+int								DailyPeak;									//Maximum number of parked cars in the day
 int								DailyEnter, DailyExit;						//Number of enter/exit cars for daily report
 float							DailyIncome;								//Income of a day for daily report
 
@@ -716,6 +717,52 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 }
 
 /*
+Description:	To handle paint event of daily report canvas
+*/
+void DailyReportCanvas_Paint() {
+	//Find best-fit width and height of the graph
+	const int MARGIN = 70;
+	const int ARROR_SIZE = 10;
+	int GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,
+		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 120;					//Calculate graph size
+	int xSpace = (GraphW - ARROR_SIZE) / 25, ySpace = (GraphH - ARROR_SIZE) / (DailyPeak + 1);	//Calculate sapce between scales
+	int CurrX, CurrY; 																			//Current graph point position
+	int PrevX, PrevY;																			//Previous graph point position
+
+	//Paint
+	/* ToDo: Align to scale; Use more precise graphing */
+	DailyReportCanvas->Cls();
+	if (GraphH < 40 || GraphW < 380)															//Area too small to paint
+		return;
+	DailyReportCanvas->DrawLine(MARGIN, MARGIN + GraphH, MARGIN + GraphW, MARGIN + GraphH);		//Draw X axis and its label
+	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROR_SIZE, MARGIN + GraphH - ARROR_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROR_SIZE, MARGIN + GraphH + ARROR_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
+	DailyReportCanvas->Print(MARGIN + GraphW, MARGIN + GraphH + 15, L"Time (hr)");
+	DailyReportCanvas->DrawLine(MARGIN, MARGIN, MARGIN, MARGIN + GraphH);						//Draw Y axis and its label
+	DailyReportCanvas->DrawLine(MARGIN - ARROR_SIZE /2 , MARGIN + ARROR_SIZE, MARGIN, MARGIN);
+	DailyReportCanvas->DrawLine(MARGIN + ARROR_SIZE / 2, MARGIN + ARROR_SIZE, MARGIN, MARGIN);
+	DailyReportCanvas->Print(MARGIN - 60, MARGIN - 25, L"No. of Cars");
+	for (int i = 1; i < 25; i++) {																//Draw scales of X axis and the graph
+		CurrX = MARGIN + xSpace * i;
+		DailyReportCanvas->DrawLine(CurrX, MARGIN + GraphH, CurrX, MARGIN + GraphH - 5);
+		DailyReportCanvas->Print(CurrX - 5, MARGIN + GraphH + 10, L"%i", i - 1);
+		CurrY = MARGIN + GraphH - ARROR_SIZE - DailyHourFreq[i - 1] * ySpace - 5;
+
+		if (DailyHourFreq[i - 1] == -1)																//No data
+			break;
+		if (i > 1)																					//If not the first point, draw a line from previous point to current point
+			DailyReportCanvas->DrawLine(PrevX, PrevY, CurrX, CurrY);
+		PrevX = CurrX;
+		PrevY = CurrY;
+	}
+	for (int i = 1; i < DailyPeak + 2; i++)	{													//Draw scales of Y axis
+		CurrY = MARGIN + ySpace * i;
+		DailyReportCanvas->DrawLine(MARGIN, CurrY, MARGIN + 5, CurrY);
+		DailyReportCanvas->Print(MARGIN - 25, CurrY - 5, L"%i", DailyPeak - i + 1);
+	}
+}
+
+/*
 Description:	To handle date changed event of date picker of daily report
 */
 void dtpDailyDate_DateTimeChanged() {
@@ -724,7 +771,7 @@ void dtpDailyDate_DateTimeChanged() {
 	LogInfo		*lpCurrLog;														//Pointer to current log
 
 	//Initialize variables
-	memset(DailyHourFreq, 0, sizeof(int) * 24);
+	memset(DailyHourFreq, 0, sizeof(int)* 24);
 	DailyEnter = DailyExit = DailyIncome = 0;
 	GetLocalTime(&stCurrentTime);												//Get current system time
 
@@ -745,11 +792,6 @@ void dtpDailyDate_DateTimeChanged() {
 			DailyIncome += lpCurrLog->Fee;
 		}
 		for (int Hour = 0; Hour < 24; Hour++) {										//Find if the car is parking at specified hour
-			//The time is greater than current date
-			if (stSelectedTime.wYear >= stCurrentTime.wYear && stSelectedTime.wMonth >= stCurrentTime.wMonth &&
-				stSelectedTime.wDay >= stCurrentTime.wDay && Hour > stCurrentTime.wHour)
-				break;
-
 			stSelectedTime.wHour = Hour;
 			//Ignore minute and second values
 			stSelectedTime.wMinute = lpCurrLog->EnterTime.wMinute = lpCurrLog->LeaveTime.wMinute =
@@ -759,31 +801,24 @@ void dtpDailyDate_DateTimeChanged() {
 			//Note that (wYear == 0) means the car is still parking
 			if (stSelectedTime >= lpCurrLog->EnterTime && ((lpCurrLog->EnterTime >= stSelectedTime) || (lpCurrLog->LeaveTime.wYear == 0)))
 				DailyHourFreq[Hour]++;													//Count carks at every hour
+
+			//The time is greater than current time
+			if (stSelectedTime >= stCurrentTime) {
+				for (int j = Hour + 1; j < 24; j++)										//Mark all count after current hour as no data
+					DailyHourFreq[j] = -1;
+				break;
+			}
 		}
 	}
-	DailyEnter = DailyEnter;
-}
 
-/*
-Description:	To handle paint event of daily report canvas
-*/
-void DailyReportCanvas_Paint() {
-	//Find best-fit width and height of the graph
-	const int MARGIN = 30;
-	int GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,
-		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 120;
+	DailyPeak = 0;
+	for (int i = 0; i < 24; i++) {												//Find maximum number of parked cars
+		if (DailyHourFreq[i] > DailyPeak)
+			DailyPeak = DailyHourFreq[i];
+	}
 
-	//Paint
-	DailyReportCanvas->Cls();
-	if (GraphH < 30 || GraphW < 30)																//Area too small to paint
-		return;
-	DailyReportCanvas->DrawLine(MARGIN, MARGIN + GraphH, MARGIN + GraphW, MARGIN + GraphH);		//Draw X, Y axis
-	DailyReportCanvas->DrawLine(MARGIN + GraphW - 10, MARGIN + GraphH - 5, MARGIN + GraphW, MARGIN + GraphH);
-	DailyReportCanvas->DrawLine(MARGIN + GraphW - 10, MARGIN + GraphH + 5, MARGIN + GraphW, MARGIN + GraphH);
-	DailyReportCanvas->DrawLine(MARGIN, MARGIN, MARGIN, MARGIN + GraphH);
-	DailyReportCanvas->DrawLine(MARGIN - 5, MARGIN + 10, MARGIN, MARGIN);
-	DailyReportCanvas->DrawLine(MARGIN + 5, MARGIN + 10, MARGIN, MARGIN);
-	/* ToDo: draw the graph with other color line and X, Y labels */
+	DailyReportCanvas_Paint();													//Invoke canvas redraw
+	InvalidateRect(DailyReportCanvas->hWnd, NULL, TRUE);
 }
 
 /*

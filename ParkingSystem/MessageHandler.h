@@ -182,8 +182,7 @@ Description:    Set the caption of the label control
 Args:           FormatString: Format string of new caption
 				FormatParams: String parameters
 */
-template <class ...Args>
-void IceLabel::SetText(const wchar_t *FormatString, Args&&... FormatParams) {
+template <class ...Args> void IceLabel::SetText(const wchar_t *FormatString, Args&&... FormatParams) {
 	wchar_t buf[255];
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
 	SetWindowText(hWnd, buf);
@@ -197,8 +196,7 @@ Args:           Index: The index of the item
 				FormatParams: String parameters
 Return:			TRUE if successful, or FALSE otherwise
 */
-template <class ...Args>
-LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
+template <class ...Args> LRESULT IceListView::SetItemText(int Index, const wchar_t *FormatString, int SubItemIndex, Args&&... FormatParams) {
 	LVITEM		lvi = { 0 };					//ListView item info
 	wchar_t		buf[255];
 
@@ -217,8 +215,7 @@ Args:           FormatString: Format string of the text of the new item
 				FormatParams: String parameters
 Return:			Index to of the new item if successful, or -1 otherwise
 */
-template <class ...Args>
-LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... FormatParams) {
+template <class ...Args> LRESULT IceListView::AddItem(const wchar_t *FormatString, int Index, Args&&... FormatParams) {
 	LVITEM		lvi = { 0 };					//ListView item info
 	wchar_t		buf[255];
 
@@ -239,8 +236,7 @@ Args:           X, Y: Text output position
 				FormatString: Format string of the output text
 				FormatParams: String parameters
 */
-template <class ...Args>
-void IceCanvas::Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams) {
+template <class ...Args> void IceCanvas::Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams) {
 	wchar_t		buf[255];
 
 	swprintf_s(buf, FormatString, std::forward<Args>(FormatParams)...);
