@@ -192,7 +192,7 @@ void MainWindow_Resize(int Width, int Height) {
 	}
 	if (CurrStatus == 2 || CurrStatus == 0)									//Log viewing mode
 		lvLog->Size(Width, Height);												//Change listview size
-	if (CurrStatus == 3 || CurrStatus == 0) {								//Unlocking mode
+	if (CurrStatus == 3 || CurrStatus == 4 || CurrStatus == 0) {			//Unlocking mode
 		//Change unlocking mode controls positions by ratio
 		RECT	PasswordFrameRect;
 		POINT	PasswordFramePos;
@@ -479,8 +479,10 @@ Description:	To handle paint event of position report canvas
 */
 void PositionReportCanvas_Paint() {
 	//Calculate width and height of each position box
-	int BoxW = (PositionReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 / 10,
-		BoxH = (PositionReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+	int		BoxW = (PositionReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 / 10,
+			BoxH = (PositionReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+	HBRUSH	OccupiedColor = CreateSolidBrush(RGB(240, 110, 40)),
+			UnoccupiedColor = CreateSolidBrush(RGB(225, 255, 225));
 
 	//Paint
 	RECT	BoxPos;
@@ -493,9 +495,12 @@ void PositionReportCanvas_Paint() {
 				BoxPos.right = BoxPos.left + BoxW;
 				BoxPos.bottom = BoxPos.top + BoxH;
 				
+				//Fill color for the position
+				FillRect(PositionReportCanvas->hDC, &BoxPos, UnoccupiedColor);
+
 				if (ParkingPos[i * 10 + j])	{											//Position occupied
-					//Draw gray background with a cross
-					FillRect(PositionReportCanvas->hDC, &BoxPos, (HBRUSH)GetStockObject(LTGRAY_BRUSH));
+					//Draw occupied background with a cross
+					FillRect(PositionReportCanvas->hDC, &BoxPos, OccupiedColor);
 					PositionReportCanvas->DrawLine(BoxPos.left, BoxPos.top, BoxPos.right, BoxPos.bottom);
 					PositionReportCanvas->DrawLine(BoxPos.right, BoxPos.top, BoxPos.left, BoxPos.bottom);
 				}
@@ -508,6 +513,10 @@ void PositionReportCanvas_Paint() {
 			}
 		}
 	}
+
+	//Release brushes
+	DeleteObject(OccupiedColor);
+	DeleteObject(UnoccupiedColor);
 }
 
 /*
@@ -584,8 +593,10 @@ Description:	To handle paint event of history report canvas
 */
 void HistoryReportCanvas_Paint() {
 	//Calculate width and height of each position box
-	int BoxW = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 / 10,
-		BoxH = (HistoryReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+	int		BoxW = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 / 10,
+			BoxH = (HistoryReportCanvas->bi.bmiHeader.biHeight - 60) / 10;
+	HBRUSH	OccupiedColor = CreateSolidBrush(RGB(240, 110, 40)),
+			UnoccupiedColor = CreateSolidBrush(RGB(225, 255, 225));
 
 	//Paint
 	RECT	BoxPos;
@@ -599,9 +610,12 @@ void HistoryReportCanvas_Paint() {
 				BoxPos.right = BoxPos.left + BoxW;
 				BoxPos.bottom = BoxPos.top + BoxH;
 
+				//Fill color for the position
+				FillRect(HistoryReportCanvas->hDC, &BoxPos, UnoccupiedColor);
+
 				if (HistoryParkedCars[i * 10 + j].EnterTime.wYear) {					//Position occupied
-					//Draw gray background with a cross
-					FillRect(HistoryReportCanvas->hDC, &BoxPos, (HBRUSH)GetStockObject(LTGRAY_BRUSH));
+					//Draw occupied background with a cross
+					FillRect(HistoryReportCanvas->hDC, &BoxPos, OccupiedColor);
 					HistoryReportCanvas->DrawLine(BoxPos.left, BoxPos.top, BoxPos.right, BoxPos.bottom);
 					HistoryReportCanvas->DrawLine(BoxPos.right, BoxPos.top, BoxPos.left, BoxPos.bottom);
 				}
@@ -614,6 +628,10 @@ void HistoryReportCanvas_Paint() {
 			}
 		}
 	}
+
+	//Release brushes
+	DeleteObject(OccupiedColor);
+	DeleteObject(UnoccupiedColor);
 }
 
 /*
@@ -737,12 +755,12 @@ Description:	To handle paint event of daily report canvas
 void DailyReportCanvas_Paint() {
 	//Find best-fit width and height of the graph
 	const int MARGIN = 70;
-	const int ARROR_SIZE = 8;
+	const int ARROW_SIZE = 8;
 
 	int DailyPeak = ParkedCarsCount + DailyEnter;												//Find maximum number of cars in the day
 	int GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,
-		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 120;					//Calculate graph size
-	int xSpace = (GraphW - ARROR_SIZE) / 25, ySpace = (GraphH - ARROR_SIZE) / (DailyPeak + 1);	//Calculate sapce between scales
+		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 100;					//Calculate graph size
+	int xSpace = (GraphW - ARROW_SIZE) / 25, ySpace = (GraphH - ARROW_SIZE) / (DailyPeak + 1);	//Calculate sapce between scales
 	int CurrX, CurrY; 																			//Current graph point position
 	int PrevX, PrevY;																			//Previous graph point position
 	int ParkingCarsCount = ParkedCarsCount;														//No. of parking cars at a certain data point
@@ -753,12 +771,12 @@ void DailyReportCanvas_Paint() {
 	if (GraphH < 40 || GraphW < 380)															//Area too small to paint
 		return;
 	DailyReportCanvas->DrawLine(MARGIN, MARGIN + GraphH, MARGIN + GraphW, MARGIN + GraphH);		//Draw X axis and its label
-	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROR_SIZE, MARGIN + GraphH - ARROR_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
-	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROR_SIZE, MARGIN + GraphH + ARROR_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROW_SIZE, MARGIN + GraphH - ARROW_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROW_SIZE, MARGIN + GraphH + ARROW_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
 	DailyReportCanvas->Print(MARGIN + GraphW, MARGIN + GraphH + 15, L"Time (hr)");
 	DailyReportCanvas->DrawLine(MARGIN, MARGIN, MARGIN, MARGIN + GraphH);						//Draw Y axis and its label
-	DailyReportCanvas->DrawLine(MARGIN - ARROR_SIZE / 2, MARGIN + ARROR_SIZE, MARGIN, MARGIN);
-	DailyReportCanvas->DrawLine(MARGIN + ARROR_SIZE / 2, MARGIN + ARROR_SIZE, MARGIN, MARGIN);
+	DailyReportCanvas->DrawLine(MARGIN - ARROW_SIZE / 2, MARGIN + ARROW_SIZE, MARGIN, MARGIN);
+	DailyReportCanvas->DrawLine(MARGIN + ARROW_SIZE / 2, MARGIN + ARROW_SIZE, MARGIN, MARGIN);
 	DailyReportCanvas->Print(MARGIN - 60, MARGIN - 25, L"No. of Cars");
 	for (i = 1; i < 25; i++) {																	//Draw scales of X axis
 		CurrX = MARGIN + xSpace * i;
@@ -770,6 +788,7 @@ void DailyReportCanvas_Paint() {
 		DailyReportCanvas->DrawLine(MARGIN, CurrY, MARGIN + 5, CurrY);
 		DailyReportCanvas->Print(MARGIN - 25, CurrY - 5, L"%i", DailyPeak - i + 1);
 	}
+	DailyReportCanvas->SetPenProps(1, RGB(0, 0, 255));											//Switch to blue pen
 	for (i = 0; i < DailyGraphDataPoints.size(); i++) {											//Draw the graph
 		if (DailyGraphDataPoints[i].Enter)															//At this data point, a car entered
 			ParkingCarsCount++;
@@ -792,15 +811,16 @@ void DailyReportCanvas_Paint() {
 		CurrX = MARGIN + xSpace * (DailyGraphDataPoints[0].Hour + 1);									//Left end
 		PrevY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + 1);
 		CurrY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + (DailyGraphDataPoints[0].Enter ? -1 : 1) + 1);
-		DailyReportCanvas->DrawLine(MARGIN, PrevY, CurrX, CurrY);
+		DailyReportCanvas->DrawLine(MARGIN + xSpace, PrevY, CurrX, CurrY);
 		CurrX = MARGIN + xSpace * (DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Hour + 1);		//Right end
 		CurrY = MARGIN + ySpace * (DailyPeak - ParkingCarsCount + 1);
-		DailyReportCanvas->DrawLine(CurrX, CurrY, MARGIN + GraphW, CurrY);
+		DailyReportCanvas->DrawLine(CurrX, CurrY, MARGIN + xSpace * 24, CurrY);
 	}
 	else {																							//If there is no any data points, draw a plain line
 		CurrY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + 1);
-		DailyReportCanvas->DrawLine(MARGIN, CurrY, MARGIN + GraphW - xSpace - ARROR_SIZE, CurrY);
+		DailyReportCanvas->DrawLine(MARGIN + xSpace, CurrY, MARGIN + xSpace * 24, CurrY);
 	}
+	DailyReportCanvas->SetPenProps(1, 0);														//Switch back to black pen
 }
 
 /*
@@ -829,8 +849,6 @@ void dtpDailyDate_DateTimeChanged() {
 			if (lpCurrLog->LeaveTime.wYear != 0)
 				ParkedCarsCount--;
 		}
-
-		/*ToDo: Use ParkedCarsCount + DailyParkedCars.size() as peak, then draw every point, fill other place with horizontal lines */
 
 		stSelectedTime.wHour = 23;													//Before the next day
 		stSelectedTime.wSecond = stSelectedTime.wMinute = 59;
@@ -875,7 +893,39 @@ Description:	To handle mouse move event of daily report canvas
 Args:			X, Y: Position of cursor
 */
 void DailyReportCanvas_MouseMove(int X, int Y) {
-	/* ToDo: 1) Find nearest point; 2) Draw dot lines to X, Y axis; 3) Show car info (enter/exit, time) */
+	/* ToDo: 2) Draw dot lines to X, Y axis; 3) Show car info (enter/exit, time) */
+	if (DailyGraphDataPoints.size() > 0) {														//If there are any data points
+		const int MARGIN = 70;
+		const int ARROW_SIZE = 8;
+
+		int xSpace = (DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2 - ARROW_SIZE) / 25;		//Find X scale separation
+		int MinSpace;																				//Minimum separation from data point to cursor
+		int MinSpaceIndex = 0;																		//The index with minimum separation from data point to cursor
+		int CurrSpace;																				//Current separation from data point to cursor
+		int i;																						//For-control
+
+		for (i = 0; i < DailyGraphDataPoints.size(); i++) {
+			CurrSpace = abs(X - MARGIN - xSpace * (DailyGraphDataPoints[i].Hour + 1));
+			if (i == 0)
+				MinSpace = CurrSpace;
+			else {
+				if (CurrSpace < MinSpace) {
+					MinSpace = CurrSpace;
+					MinSpaceIndex = i;
+				}
+			}
+		}
+
+		DailyReportCanvas->SetPenProps(1, 0, PS_DASH);
+		DailyReportCanvas->DrawLine(MARGIN, )
+		DailyReportCanvas->SetPenProps(1, 0, PS_SOLID);
+
+		if (DailyGraphDataPoints[MinSpaceIndex].Enter)
+			DailyReportCanvas->Print(0, 0, L"%i:%i", DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->EnterTime.wHour, DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->EnterTime.wMinute);
+		else
+			DailyReportCanvas->Print(0, 0, L"%i:%i", DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->LeaveTime.wHour, DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->LeaveTime.wMinute);
+		InvalidateRgn(DailyReportCanvas->hWnd, NULL, TRUE);
+	}
 }
 
 /*
@@ -913,10 +963,27 @@ int CALLBACK ListViewCompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	SendMessage(lvLog->hWnd, LVM_GETITEMTEXT, lParam1, (LPARAM)&lvi1);
 	SendMessage(lvLog->hWnd, LVM_GETITEMTEXT, lParam2, (LPARAM)&lvi2);
 
-	if (((lvSortInfo*)lParamSort)->Ascending)								//Return value depends on sorting direction
-		return lstrcmpW(buf1, buf2);
-	else
-		return -lstrcmpW(buf1, buf2);
+	//Return value depends on sorting direction
+	if (((lvSortInfo*)lParamSort)->HeaderIndex == 0 ||
+		((lvSortInfo*)lParamSort)->HeaderIndex == 4) {						//For int values (index, position), compare by numeric value
+
+		if (((lvSortInfo*)lParamSort)->Ascending)
+			return _wtoi(buf1) - _wtoi(buf2);
+		else
+			return _wtoi(buf2) - _wtoi(buf1);
+	}
+	else if (((lvSortInfo*)lParamSort)->HeaderIndex == 5) {					//For float values (fee), compare by numeric value
+		if (((lvSortInfo*)lParamSort)->Ascending)								//Buffer addresses need to + 1 to skip '$' at the beginning
+			return _wtof(buf1 + 1) - _wtof(buf2 + 1);
+		else
+			return _wtof(buf2 + 1) - _wtof(buf1 + 1);
+	}
+	else {																	//For string values (car number, date), compare by string
+		if (((lvSortInfo*)lParamSort)->Ascending)
+			return lstrcmpW(buf1, buf2);
+		else
+			return -lstrcmpW(buf1, buf2);
+	}
 }
 
 /*
@@ -1090,7 +1157,6 @@ void mnuLock_Click() {
 	tabReport->SetVisible(false);
 	ShowPasswordFrame();
 	SetFocus(edPassword->hWnd);
-	/* ToDo: center the box */
 }
 
 /*
