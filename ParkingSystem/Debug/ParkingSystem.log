@@ -1,25 +1,42 @@
-﻿  ParkingSystem.cpp
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(174): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(177): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(180): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(181): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(183): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(184): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(186): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(187): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(189): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(190): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(383): warning C4244: 'return' : conversion from 'double' to 'float', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(792): warning C4018: '<' : signed/unsigned mismatch
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(799): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(806): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(811): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(815): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(838): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(880): warning C4018: '<' : signed/unsigned mismatch
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(881): warning C4018: '<' : signed/unsigned mismatch
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(907): warning C4018: '<' : signed/unsigned mismatch
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(908): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(973): warning C4244: 'return' : conversion from 'double' to 'int', possible loss of data
-k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(975): warning C4244: 'return' : conversion from 'double' to 'int', possible loss of data
-  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe
+﻿Build started 5/11/2019 12:46:38 PM.
+     1>Project "C:\Users\aplstudent\Downloads\PortableGit-2.20.1-32-bit.7z\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _USING_V110_SDK71_ /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ParkingSystem.cpp
+         ParkingSystem.cpp
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(175): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(178): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(181): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(182): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(184): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(185): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(187): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(188): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(190): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(191): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(384): warning C4244: 'return' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(792): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(794): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(801): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(806): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(810): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(834): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(885): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(886): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(915): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(916): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(930): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(931): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(989): warning C4244: 'return' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\aplstudent\downloads\portablegit-2.20.1-32-bit.7z\parkingsystem\parkingsystem\parkingsystem.cpp(991): warning C4244: 'return' : conversion from 'double' to 'int', possible loss of data
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\aplstudent\Downloads\PortableGit-2.20.1-32-bit.7z\ParkingSystem\Debug\ParkingSystem.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:ParkingSystem.exe.manifest /DEBUG /PDB:"C:\Users\aplstudent\Downloads\PortableGit-2.20.1-32-bit.7z\ParkingSystem\Debug\ParkingSystem.pdb" /SUBSYSTEM:WINDOWS,"5.01" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\aplstudent\Downloads\PortableGit-2.20.1-32-bit.7z\ParkingSystem\Debug\ParkingSystem.lib" /MACHINE:X86 Debug\ParkingSystem.res
+         Debug\FileManager.obj
+         Debug\MessageHandler.obj
+         Debug\ParkingSystem.obj
+         Debug\SettingsWindow.obj
+         ParkingSystem.vcxproj -> C:\Users\aplstudent\Downloads\PortableGit-2.20.1-32-bit.7z\ParkingSystem\Debug\ParkingSystem.exe
+     1>Done Building Project "C:\Users\aplstudent\Downloads\PortableGit-2.20.1-32-bit.7z\ParkingSystem\ParkingSystem\ParkingSystem.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.92

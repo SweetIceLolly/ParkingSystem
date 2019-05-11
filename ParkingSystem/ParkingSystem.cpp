@@ -17,6 +17,7 @@ struct lvSortInfo {
 struct DailyDataPoint {
 	float						Hour;										//Time of the data point, in hours
 	bool						Enter;										//Enter or exit, true = Enter
+	int							Value;										//Cars count of the data point
 	LogInfo						*lpLogInfo;									//Corresponding log info
 };
 
@@ -763,7 +764,6 @@ void DailyReportCanvas_Paint() {
 	int xSpace = (GraphW - ARROW_SIZE) / 25, ySpace = (GraphH - ARROW_SIZE) / (DailyPeak + 1);	//Calculate sapce between scales
 	int CurrX, CurrY; 																			//Current graph point position
 	int PrevX, PrevY;																			//Previous graph point position
-	int ParkingCarsCount = ParkedCarsCount;														//No. of parking cars at a certain data point
 	int i;																						//For-control
 
 	//Paint
@@ -790,21 +790,16 @@ void DailyReportCanvas_Paint() {
 	}
 	DailyReportCanvas->SetPenProps(1, RGB(0, 0, 255));											//Switch to blue pen
 	for (i = 0; i < DailyGraphDataPoints.size(); i++) {											//Draw the graph
-		if (DailyGraphDataPoints[i].Enter)															//At this data point, a car entered
-			ParkingCarsCount++;
-		else																						//At this data point, a car exited
-			ParkingCarsCount--;
-
 		if (i > 0) {																				//If this is not the first data point
 			CurrX = MARGIN + xSpace * (DailyGraphDataPoints[i].Hour + 1);								//Find position of current data point
-			CurrY = MARGIN + ySpace * (DailyPeak - ParkingCarsCount + 1);
+			CurrY = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[i].Value + 1);
 			DailyReportCanvas->DrawLine(PrevX, PrevY, CurrX, CurrY);									//Line data point with previous one
 			PrevX = CurrX;
 			PrevY = CurrY;
 		}
 		else {																						//If this is the first data point
 			PrevX = MARGIN + xSpace * (DailyGraphDataPoints[i].Hour + 1);								//Find position of the first point
-			PrevY = MARGIN + ySpace * (DailyPeak - ParkingCarsCount + 1);
+			PrevY = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[i].Value + 1);
 		}
 	}
 	if (DailyGraphDataPoints.size() > 0) {															//If there are any data points, connect two ends of graph with margin
@@ -813,7 +808,7 @@ void DailyReportCanvas_Paint() {
 		CurrY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + (DailyGraphDataPoints[0].Enter ? -1 : 1) + 1);
 		DailyReportCanvas->DrawLine(MARGIN + xSpace, PrevY, CurrX, CurrY);
 		CurrX = MARGIN + xSpace * (DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Hour + 1);		//Right end
-		CurrY = MARGIN + ySpace * (DailyPeak - ParkingCarsCount + 1);
+		CurrY = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Value + 1);
 		DailyReportCanvas->DrawLine(CurrX, CurrY, MARGIN + xSpace * 24, CurrY);
 	}
 	else {																							//If there is no any data points, draw a plain line
@@ -831,6 +826,7 @@ void dtpDailyDate_DateTimeChanged() {
 	SYSTEMTIME		stCurrentTime;												//Current system time
 	LogInfo			*lpCurrLog;													//Pointer to current log
 	DailyDataPoint	DataPointInfo;												//Data point info of a specific event (enter/exit)
+	int				CurrParkedCars;												//Number of parked cars at a certain data point
 
 	//Initialize variables
 	DailyGraphDataPoints.clear();
@@ -839,41 +835,50 @@ void dtpDailyDate_DateTimeChanged() {
 	GetLocalTime(&stCurrentTime);												//Get current system time
 	dtpDailyDate->GetTime(&stSelectedTime);										//Get selected date from date picker
 
-	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {				//Calculate parked cars before the selected date
 		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
-		DataPointInfo.lpLogInfo = lpCurrLog;										//Set log info pointer of data point info
-		stSelectedTime.wHour = stSelectedTime.wSecond = stSelectedTime.wMinute = 0;	//Before the selected date
 		if (stSelectedTime > lpCurrLog->EnterTime)									//Count number of parked cars before the seleced date
 			ParkedCarsCount++;
 		if (stSelectedTime > lpCurrLog->LeaveTime) {
 			if (lpCurrLog->LeaveTime.wYear != 0)
 				ParkedCarsCount--;
 		}
+	}
+	CurrParkedCars = ParkedCarsCount;
 
+	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
+		DataPointInfo.lpLogInfo = lpCurrLog;										//Set log info pointer of data point info
+		stSelectedTime.wHour = stSelectedTime.wSecond = stSelectedTime.wMinute = 0;	//Before the selected date
+		
 		stSelectedTime.wHour = 23;													//Before the next day
 		stSelectedTime.wSecond = stSelectedTime.wMinute = 59;
 		if (lpCurrLog->EnterTime.wYear == stSelectedTime.wYear &&
 			lpCurrLog->EnterTime.wMonth == stSelectedTime.wMonth &&
 			lpCurrLog->EnterTime.wDay == stSelectedTime.wDay) {						//The car entered in the specified date
 
+			DailyEnter++;
+			CurrParkedCars++;
+
 			//Add data point
 			DataPointInfo.Hour = lpCurrLog->EnterTime.wHour + (float)lpCurrLog->EnterTime.wMinute / 60;
 			DataPointInfo.Enter = true;
+			DataPointInfo.Value = CurrParkedCars;										//Record number of cars
 			DailyGraphDataPoints.push_back(DataPointInfo);
-
-			DailyEnter++;
 		}
 		if (lpCurrLog->LeaveTime.wYear == stSelectedTime.wYear &&
 			lpCurrLog->LeaveTime.wMonth == stSelectedTime.wMonth &&
 			lpCurrLog->LeaveTime.wDay == stSelectedTime.wDay) {						//The car left in the specified date
 
+			DailyExit++;
+			CurrParkedCars--;
+			DataPointInfo.Value = CurrParkedCars;										//Record number of cars
+			DailyIncome += lpCurrLog->Fee;
+
 			//Add data point
 			DataPointInfo.Hour = lpCurrLog->LeaveTime.wHour + (float)lpCurrLog->LeaveTime.wMinute / 60;
 			DataPointInfo.Enter = false;
 			DailyGraphDataPoints.push_back(DataPointInfo);
-
-			DailyExit++;
-			DailyIncome += lpCurrLog->Fee;
 		}
 	}
 
@@ -898,10 +903,13 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 		const int MARGIN = 70;
 		const int ARROW_SIZE = 8;
 
-		int xSpace = (DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2 - ARROW_SIZE) / 25;		//Find X scale separation
+		int DailyPeak = ParkedCarsCount + DailyEnter;												//Find maximum number of cars in the day
+		int xSpace = (DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2 - ARROW_SIZE) / 25,		//Find X, Y scale separation
+			ySpace = (DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 100 - ARROW_SIZE) / (DailyPeak + 1);
 		int MinSpace;																				//Minimum separation from data point to cursor
 		int MinSpaceIndex = 0;																		//The index with minimum separation from data point to cursor
 		int CurrSpace;																				//Current separation from data point to cursor
+		int xPos, yPos;																				//X/Y position of the dash line
 		int i;																						//For-control
 
 		for (i = 0; i < DailyGraphDataPoints.size(); i++) {
@@ -916,8 +924,12 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 			}
 		}
 
+		//Draw dash lines to X axis and Y axis
 		DailyReportCanvas->SetPenProps(1, 0, PS_DASH);
-		DailyReportCanvas->DrawLine(MARGIN, )
+		yPos = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[MinSpaceIndex].Value + 1);
+		DailyReportCanvas->DrawLine(MARGIN, yPos, MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1), yPos);
+		xPos = MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1);
+		DailyReportCanvas->DrawLine(xPos, yPos, xPos, DailyReportCanvas->bi.bmiHeader.biHeight);
 		DailyReportCanvas->SetPenProps(1, 0, PS_SOLID);
 
 		if (DailyGraphDataPoints[MinSpaceIndex].Enter)
