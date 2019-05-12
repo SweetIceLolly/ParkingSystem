@@ -12,8 +12,6 @@ File:           MessageHandler.h
 #include <memory>
 #include "resource.h"
 
-#define swprintf_s wsprintf	/* ToDo: delete this */
-
 /* Procedure declarations */
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance

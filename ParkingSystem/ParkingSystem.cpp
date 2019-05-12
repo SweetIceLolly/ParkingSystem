@@ -228,8 +228,11 @@ void MainWindow_Resize(int Width, int Height) {
 		sliHistoryTime->Move(DrawPos + 45, 60);
 	}
 	if (CurrStatus == 7 || CurrStatus == 0) {								//Viewing daily report
+		const int MARGIN = 70;
+
 		tabReport->Size(Width, Height);
 		DailyReportCanvas->Size(Width, Height - TabHeaderHeight);
+		dtpDailyDate->Move(Width - MARGIN - 100, DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN - 50);
 	}
 	if (CurrStatus == 8 || CurrStatus == 0) {								//Viewing monthly report
 		tabReport->Size(Width, Height);
@@ -733,11 +736,25 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 160,
 				L"Car Number: %s", HistoryParkedCars[PrevPos].CarNumber);
 
-			//Show enter time & est. fee info
+			//Show enter time
 			SYSTEMTIME stEnter = HistoryParkedCars[PrevPos].EnterTime;
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 180,
 				L"Enter Time: %04u-%02u-%02u %02u:%02u:%02u",
 				stEnter.wYear, stEnter.wMonth, stEnter.wDay, stEnter.wHour, stEnter.wMinute, stEnter.wSecond);
+
+			//Show leave date and fee if the car has left
+			if (HistoryParkedCars[PrevPos].LeaveTime.wYear) {						//The car has left
+				SYSTEMTIME	stLeave = HistoryParkedCars[PrevPos].LeaveTime;
+				int			HoursParked;
+
+				HistoryReportCanvas->Print(HistoryAreaWidth + 45, 200,
+					L"Leave Time: %04u-%02u-%02u %02u:%02u:%02u",
+					stLeave.wYear, stLeave.wMonth, stLeave.wDay, stLeave.wHour, stLeave.wMinute, stLeave.wSecond);
+				HistoryReportCanvas->Print(HistoryAreaWidth + 45, 240,
+					L"Fee Paid: $%.2f", CalcFee(&stEnter, &stLeave, &HoursParked));
+				HistoryReportCanvas->Print(HistoryAreaWidth + 45, 220,
+					L"Hours Parked: %i", HoursParked);
+			}
 		}
 		else {																	//Position unoccupied
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
@@ -898,21 +915,29 @@ Description:	To handle mouse move event of daily report canvas
 Args:			X, Y: Position of cursor
 */
 void DailyReportCanvas_MouseMove(int X, int Y) {
-	/* ToDo: 2) Draw dot lines to X, Y axis; 3) Show car info (enter/exit, time) */
-	if (DailyGraphDataPoints.size() > 0) {														//If there are any data points
-		const int MARGIN = 70;
-		const int ARROW_SIZE = 8;
+	if (DailyGraphDataPoints.size() > 0) {										//If there are any data points
+		const int	MARGIN = 70;
+		const int	ARROW_SIZE = 8;
 
-		int DailyPeak = ParkedCarsCount + DailyEnter;												//Find maximum number of cars in the day
-		int xSpace = (DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2 - ARROW_SIZE) / 25,		//Find X, Y scale separation
-			ySpace = (DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 100 - ARROW_SIZE) / (DailyPeak + 1);
-		int MinSpace;																				//Minimum separation from data point to cursor
-		int MinSpaceIndex = 0;																		//The index with minimum separation from data point to cursor
-		int CurrSpace;																				//Current separation from data point to cursor
-		int xPos, yPos;																				//X/Y position of the dash line
-		int i;																						//For-control
+		static int	PrevMinSpaceIndex = -1;											//Previously selected data point index
+		
+		int			GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,	//Calculate graph size
+					GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 100;
 
-		for (i = 0; i < DailyGraphDataPoints.size(); i++) {
+		if (GraphH < 40 || GraphW < 380)											//Area too small to paint
+			return;
+
+		int			DailyPeak = ParkedCarsCount + DailyEnter;						//Find maximum number of cars in the day
+		int			xSpace = (GraphW - ARROW_SIZE) / 25,							//Find X, Y scale separation
+					ySpace = (GraphH - ARROW_SIZE) / (DailyPeak + 1);
+		int			MinSpace;														//Minimum separation from data point to cursor
+		int			MinSpaceIndex = 0;												//The index with minimum separation from data point to cursor
+		int			CurrSpace;														//Current separation from data point to cursor
+		int			xPos, yPos;														//X/Y position of the dash line
+		LogInfo		*lpLogInfo;														//lpLogInfo of the nearest data point
+		int			i;																//For-control
+
+		for (i = 0; i < DailyGraphDataPoints.size(); i++) {							//Find the nearest data point
 			CurrSpace = abs(X - MARGIN - xSpace * (DailyGraphDataPoints[i].Hour + 1));
 			if (i == 0)
 				MinSpace = CurrSpace;
@@ -924,19 +949,46 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 			}
 		}
 
+		if (PrevMinSpaceIndex == MinSpaceIndex)										//If the index remains unchanged, don't paint to reduce CPU usage
+			return;
+		else
+			PrevMinSpaceIndex = MinSpaceIndex;											//Otherwise record the new selected index
+
 		//Draw dash lines to X axis and Y axis
 		DailyReportCanvas->SetPenProps(1, 0, PS_DASH);
 		yPos = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[MinSpaceIndex].Value + 1);
 		DailyReportCanvas->DrawLine(MARGIN, yPos, MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1), yPos);
 		xPos = MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1);
-		DailyReportCanvas->DrawLine(xPos, yPos, xPos, DailyReportCanvas->bi.bmiHeader.biHeight);
+		DailyReportCanvas->DrawLine(xPos, yPos, xPos, GraphH + MARGIN);
 		DailyReportCanvas->SetPenProps(1, 0, PS_SOLID);
-
-		if (DailyGraphDataPoints[MinSpaceIndex].Enter)
-			DailyReportCanvas->Print(0, 0, L"%i:%i", DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->EnterTime.wHour, DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->EnterTime.wMinute);
-		else
-			DailyReportCanvas->Print(0, 0, L"%i:%i", DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->LeaveTime.wHour, DailyGraphDataPoints[MinSpaceIndex].lpLogInfo->LeaveTime.wMinute);
 		InvalidateRgn(DailyReportCanvas->hWnd, NULL, TRUE);
+
+		//Show related info
+		lpLogInfo = DailyGraphDataPoints[MinSpaceIndex].lpLogInfo;
+		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 70, L"Car Number: %s", lpLogInfo->CarNumber);
+		if (DailyGraphDataPoints[MinSpaceIndex].Enter) {
+			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 50, L"Event: %s", L"Car Entered");
+			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 90, L"Time: %02u:%02u:%02u",
+				lpLogInfo->EnterTime.wHour, lpLogInfo->EnterTime.wMinute, lpLogInfo->EnterTime.wSecond);
+		}
+		else {
+			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 50, L"Event: %s", L"Car Left");
+			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 90, L"Time: %02u:%02u:%02u",
+				lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
+		}
+		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 110, L"No. of Cars in the park: %i", DailyGraphDataPoints[MinSpaceIndex].Value);
+		if (lpLogInfo->LeaveTime.wYear) {											//If the car has left
+			int	HoursParked;
+
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 50,
+				L"Car Leave Time: %04u-%02u-%02u %02u:%02u:%02u",
+				lpLogInfo->LeaveTime.wYear, lpLogInfo->LeaveTime.wMonth, lpLogInfo->LeaveTime.wDay,
+				lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 90,
+				L"Fee Paid: $%.2f", CalcFee(&(lpLogInfo->EnterTime), &(lpLogInfo->LeaveTime), &HoursParked));
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 70,
+				L"Hours Parked: %i", HoursParked);
+		}
 	}
 }
 
