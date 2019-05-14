@@ -21,13 +21,26 @@ struct DailyDataPoint {
 	LogInfo						*lpLogInfo;									//Corresponding log info
 };
 
-/* Overload >= operator for comparing date easier */
-/* I don't need other comparison operators so I don't overload them (#^.^#) */
+/* Data structure of monthly report graph */
+struct MonthlyDataPoint {
+	int							Value;										//Cars count of the data point
+	int							DailyEnter;									//Number of cars entered
+	int							DailyExit;									//Number of cars exited
+	float						DailyFee;									//Total fee earned of a day
+};
+
+/*
+Description:	Convert the time stored in SYSTEMTIME to seconds
+Args:			st: A SYSTEMTIME variable
+Return:			Time value in seconds
+*/
 inline UINT ToSecond(SYSTEMTIME st) {
 	return (UINT)(st.wYear * 365 * 24 * 3600 + st.wMonth * 31 * 24 * 3600 + st.wDay * 24 * 3600 + \
 		st.wHour * 3600 + st.wMinute * 60 + st.wSecond);
 }
 
+/* Overload >= and > operator for comparing date easier */
+/* I don't need other comparison operators so I don't overload them (#^.^#) */
 bool operator>=(SYSTEMTIME st1, SYSTEMTIME st2) {
 	return ToSecond(st1) >= ToSecond(st2);
 }
@@ -59,6 +72,7 @@ shared_ptr<IceButton>			btnEnterOrExit;
 shared_ptr<IceDateTimePicker>	dtpHistoryDate;
 shared_ptr<IceDateTimePicker>	dtpHistoryTime;
 shared_ptr<IceDateTimePicker>	dtpDailyDate;
+shared_ptr<IceDateTimePicker>	dtpMonthlyDate;
 shared_ptr<IceSlider>			sliHistoryTime;
 shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
@@ -77,6 +91,12 @@ vector<DailyDataPoint>			DailyGraphDataPoints;						//Daily report graph data po
 int								DailyEnter, DailyExit;						//Number of enter/exit cars for daily report
 int								ParkedCarsCount;							//Number of parked cars before the selected day
 float							DailyIncome;								//Income of a day for daily report
+
+/* Monthly report related */
+vector<MonthlyDataPoint>		MonthlyGraphDataPoints;						//Monthly report graph data point info
+int								MonthlyEnter, MonthlyExit;					//Number of enter/exit cars for monthly report
+float							MonthlyIncome;								//Income of a month for monthly report
+int								MonthlyMaxValue;							//Maximum value of the graph
 
 /*
 Program status identifier
@@ -228,11 +248,9 @@ void MainWindow_Resize(int Width, int Height) {
 		sliHistoryTime->Move(DrawPos + 45, 60);
 	}
 	if (CurrStatus == 7 || CurrStatus == 0) {								//Viewing daily report
-		const int MARGIN = 70;
-
 		tabReport->Size(Width, Height);
 		DailyReportCanvas->Size(Width, Height - TabHeaderHeight);
-		dtpDailyDate->Move(Width - MARGIN - 100, DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN - 50);
+		dtpDailyDate->Move(Width - 130, 25);
 	}
 	if (CurrStatus == 8 || CurrStatus == 0) {								//Viewing monthly report
 		tabReport->Size(Width, Height);
@@ -840,19 +858,19 @@ Description:	To handle date changed event of date picker of daily report
 */
 void dtpDailyDate_DateTimeChanged() {
 	SYSTEMTIME		stSelectedTime;												//The time user selected
-	SYSTEMTIME		stCurrentTime;												//Current system time
 	LogInfo			*lpCurrLog;													//Pointer to current log
 	DailyDataPoint	DataPointInfo;												//Data point info of a specific event (enter/exit)
-	int				CurrParkedCars;												//Number of parked cars at a certain data point
+	int				CurrParkedCarsCount;										//Number of parked cars at a certain data point
+	int				i, j;														//For-control
 
 	//Initialize variables
 	DailyGraphDataPoints.clear();
 	ParkedCarsCount = 0;
 	DailyEnter = DailyExit = DailyIncome = 0;
-	GetLocalTime(&stCurrentTime);												//Get current system time
 	dtpDailyDate->GetTime(&stSelectedTime);										//Get selected date from date picker
 
-	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {				//Calculate parked cars before the selected date
+	stSelectedTime.wHour = stSelectedTime.wSecond = stSelectedTime.wMinute = 0;	//Before the selected date
+	for (i = 0; i < LogFile->FileContent.ElementCount; i++) {					//Calculate parked cars before the selected date
 		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
 		if (stSelectedTime > lpCurrLog->EnterTime)									//Count number of parked cars before the seleced date
 			ParkedCarsCount++;
@@ -861,26 +879,25 @@ void dtpDailyDate_DateTimeChanged() {
 				ParkedCarsCount--;
 		}
 	}
-	CurrParkedCars = ParkedCarsCount;
+	CurrParkedCarsCount = ParkedCarsCount;
 
-	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+	stSelectedTime.wHour = 23;													//Before the next day
+	stSelectedTime.wSecond = stSelectedTime.wMinute = 59;
+	for (i = 0; i < LogFile->FileContent.ElementCount; i++) {
 		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
 		DataPointInfo.lpLogInfo = lpCurrLog;										//Set log info pointer of data point info
-		stSelectedTime.wHour = stSelectedTime.wSecond = stSelectedTime.wMinute = 0;	//Before the selected date
 		
-		stSelectedTime.wHour = 23;													//Before the next day
-		stSelectedTime.wSecond = stSelectedTime.wMinute = 59;
 		if (lpCurrLog->EnterTime.wYear == stSelectedTime.wYear &&
 			lpCurrLog->EnterTime.wMonth == stSelectedTime.wMonth &&
 			lpCurrLog->EnterTime.wDay == stSelectedTime.wDay) {						//The car entered in the specified date
 
 			DailyEnter++;
-			CurrParkedCars++;
+			CurrParkedCarsCount++;
 
 			//Add data point
 			DataPointInfo.Hour = lpCurrLog->EnterTime.wHour + (float)lpCurrLog->EnterTime.wMinute / 60;
 			DataPointInfo.Enter = true;
-			DataPointInfo.Value = CurrParkedCars;										//Record number of cars
+			DataPointInfo.Value = CurrParkedCarsCount;									//Record number of cars
 			DailyGraphDataPoints.push_back(DataPointInfo);
 		}
 		if (lpCurrLog->LeaveTime.wYear == stSelectedTime.wYear &&
@@ -888,8 +905,8 @@ void dtpDailyDate_DateTimeChanged() {
 			lpCurrLog->LeaveTime.wDay == stSelectedTime.wDay) {						//The car left in the specified date
 
 			DailyExit++;
-			CurrParkedCars--;
-			DataPointInfo.Value = CurrParkedCars;										//Record number of cars
+			CurrParkedCarsCount--;
+			DataPointInfo.Value = CurrParkedCarsCount;									//Record number of cars
 			DailyIncome += lpCurrLog->Fee;
 
 			//Add data point
@@ -899,8 +916,8 @@ void dtpDailyDate_DateTimeChanged() {
 		}
 	}
 
-	for (int i = 0; i < DailyGraphDataPoints.size(); i++) {						//Sort by time
-		for (int j = i + 1; j < DailyGraphDataPoints.size(); j++) {
+	for (i = 0; i < DailyGraphDataPoints.size(); i++) {							//Sort by time
+		for (j = i + 1; j < DailyGraphDataPoints.size(); j++) {
 			if (DailyGraphDataPoints[i].Hour > DailyGraphDataPoints[j].Hour)
 				std::swap(DailyGraphDataPoints[i], DailyGraphDataPoints[j]);
 		}
@@ -965,30 +982,36 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 
 		//Show related info
 		lpLogInfo = DailyGraphDataPoints[MinSpaceIndex].lpLogInfo;
-		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 70, L"Car Number: %s", lpLogInfo->CarNumber);
+		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 50, L"Cars Entered Today: %i", DailyEnter);
+		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 70, L"Cars Left Today: %i", DailyExit);
+		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 90, L"Daily Income: $%.2f", DailyIncome);
+		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 110, L"No. of Cars in the park: %i", DailyGraphDataPoints[MinSpaceIndex].Value);
 		if (DailyGraphDataPoints[MinSpaceIndex].Enter) {
-			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 50, L"Event: %s", L"Car Entered");
-			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 90, L"Time: %02u:%02u:%02u",
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 50, L"Event: %s", L"Car Entered");
+			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 130, L"Time: %02u:%02u:%02u",
 				lpLogInfo->EnterTime.wHour, lpLogInfo->EnterTime.wMinute, lpLogInfo->EnterTime.wSecond);
 		}
 		else {
-			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 50, L"Event: %s", L"Car Left");
-			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 90, L"Time: %02u:%02u:%02u",
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 50, L"Event: %s", L"Car Left");
+			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 130, L"Time: %02u:%02u:%02u",
 				lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
 		}
-		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 110, L"No. of Cars in the park: %i", DailyGraphDataPoints[MinSpaceIndex].Value);
+		DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 70, L"Car Number: %s", lpLogInfo->CarNumber);
 		if (lpLogInfo->LeaveTime.wYear) {											//If the car has left
 			int	HoursParked;
 
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 50,
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 90,
 				L"Car Leave Time: %04u-%02u-%02u %02u:%02u:%02u",
 				lpLogInfo->LeaveTime.wYear, lpLogInfo->LeaveTime.wMonth, lpLogInfo->LeaveTime.wDay,
 				lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 90,
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 130,
 				L"Fee Paid: $%.2f", CalcFee(&(lpLogInfo->EnterTime), &(lpLogInfo->LeaveTime), &HoursParked));
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 70,
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 110,
 				L"Hours Parked: %i", HoursParked);
 		}
+		else
+			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 90,
+				L"Still Parking");
 	}
 }
 
@@ -996,7 +1019,97 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 Description:	To handle paint event of monthly report canvas
 */
 void MonthlyReportCanvas_Paint() {
+	//Find best-fit width and height of the graph
+	const int MARGIN = 70;
+	const int ARROW_SIZE = 8;
 
+	MonthlyReportCanvas->Cls();
+	/* ToDo: draw the graph */
+}
+
+/*
+Description:	To handle date changed event of date picker of monthly report
+*/
+void dtpMonthlyDate_DateTimeChanged() {
+	SYSTEMTIME			stSelectedTime;											//The time user selected
+	int					MonthDays;												//Number of days in the specific month
+	LogInfo				*lpCurrLog;												//Pointer to current log
+	int					i;														//For-control
+	int					CurrParkedCarsCount = 0;								//Number of current parked cars
+
+	//Initialize variables
+	MonthlyGraphDataPoints.clear();
+	MonthlyMaxValue = 0;
+	MonthlyEnter = MonthlyExit = DailyIncome = 0;
+	dtpMonthlyDate->GetTime(&stSelectedTime);									//Get selected date from date picker
+
+	switch (stSelectedTime.wMonth) {											//Get number of days of the selected month
+	case 1: case 3: case 5: case 7: case 8: case 10: case 12:						//31-days months
+		MonthDays = 31;
+		break;
+
+	case 4: case 6: case 9: case 11:												//30-days months
+		MonthDays = 30;
+		break;
+
+	case 2:																			//February
+		if ((stSelectedTime.wYear % 4 == 0 && stSelectedTime.wYear % 100 != 0) ||
+			(stSelectedTime.wYear % 400 == 0))											//For leap years, 29 days in Feb
+
+			MonthDays = 29;
+		else																			//For normal years, 28 days in Feb
+			MonthDays = 28;
+		break;
+	}
+	MonthlyGraphDataPoints.resize(MonthDays);									//Allocate array to store data points
+
+	stSelectedTime.wDay = 1;
+	stSelectedTime.wHour = stSelectedTime.wSecond = stSelectedTime.wMinute = 0;	//Before the selected date
+	for (i = 0; i < LogFile->FileContent.ElementCount; i++) {					//Calculate parked cars before the selected date
+		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
+		if (stSelectedTime > lpCurrLog->EnterTime)									//Count number of parked cars before the seleced date
+			CurrParkedCarsCount++;
+		if (stSelectedTime > lpCurrLog->LeaveTime) {
+			if (lpCurrLog->LeaveTime.wYear != 0)
+				CurrParkedCarsCount--;
+		}
+	}
+
+	stSelectedTime.wDay = MonthDays;											//Before next month
+	stSelectedTime.wHour = 23;
+	stSelectedTime.wSecond = stSelectedTime.wMinute = 59;
+	for (i = 0; i < LogFile->FileContent.ElementCount; i++) {
+		lpCurrLog = &(LogFile->FileContent.LogData[i]);								//Get a pointer to current log info
+
+		if (lpCurrLog->EnterTime.wYear == stSelectedTime.wYear &&
+			lpCurrLog->EnterTime.wMonth == stSelectedTime.wMonth) {					//The car entered in the specified month
+
+			MonthlyEnter++;
+			MonthlyGraphDataPoints[stSelectedTime.wMonth].DailyEnter++;
+		}
+		if (lpCurrLog->LeaveTime.wYear == stSelectedTime.wYear &&
+			lpCurrLog->LeaveTime.wMonth == stSelectedTime.wMonth) {					//The car left in the specified month
+
+			MonthlyExit++;
+			MonthlyGraphDataPoints[stSelectedTime.wMonth].DailyExit++;
+			MonthlyGraphDataPoints[stSelectedTime.wMonth].DailyFee += lpCurrLog->Fee;
+		}
+	}
+
+	for (i = 0; i < MonthDays; i++) {
+		MonthlyIncome += MonthlyGraphDataPoints[i].DailyFee;						//Calculate sum of fee
+		if (i == 0)																	//Calculate number of cars of the day
+			//For the first day of the month, number of cars = number of cars on the last day of last month + daily entered - daily exited
+			MonthlyGraphDataPoints[i].Value = CurrParkedCarsCount + MonthlyGraphDataPoints[i].DailyEnter - MonthlyGraphDataPoints[i].DailyExit;
+		else
+			//For the following days, number of cars = number of cars on the last day + daily entered - daily exited
+			MonthlyGraphDataPoints[i].Value = MonthlyGraphDataPoints[i - 1].Value + MonthlyGraphDataPoints[i].DailyEnter - MonthlyGraphDataPoints[i].DailyExit;
+		if (MonthlyGraphDataPoints[i].Value > MonthlyMaxValue)						//Find maximum value
+			MonthlyMaxValue = MonthlyGraphDataPoints[i].Value;
+	}
+
+	MonthlyReportCanvas_Paint();
+	InvalidateRect(MonthlyReportCanvas->hWnd, NULL, TRUE);							//Invoke canvas redraw
 }
 
 /*
@@ -1074,8 +1187,7 @@ void tabReport_TabSelected() {
 		MonthlyReportCanvas->SetVisible(false);
 		PositionReportCanvas_Paint();											//Invoke canvas redraw
 		InvalidateRect(PositionReportCanvas->hWnd, NULL, TRUE);					//Refresh canvas
-		PositionReportCanvas->Print((PositionReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2 + 45, 30,
-			L"Occupied Positions: %i/100", CurrParkedCars.size());				//Show number of occupied positions
+		PositionReportCanvas_MouseMove(0, 0);									//Assume that cursor is moved to top-left position (invokes canvas redraw)
 		break;
 
 	case 1:																	//History report
@@ -1154,6 +1266,7 @@ void MainWindow_Create(HWND hWnd) {
 	dtpHistoryDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYDATEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
 	dtpHistoryTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTIMEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
 	dtpDailyDate = make_shared<IceDateTimePicker>(hWnd, IDC_DAILYDATEPICKER, (VOID_EVENT)dtpDailyDate_DateTimeChanged);
+	dtpMonthlyDate = make_shared<IceDateTimePicker>(hWnd, IDC_MONTHDATEPICKER, (VOID_EVENT)dtpMonthlyDate_DateTimeChanged);
 	sliHistoryTime = make_shared<IceSlider>(hWnd, IDC_HISTORYTIMESLIDER, (VOID_EVENT)sliHistoryTime_ValueChanged);
 	fraPasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
 	
@@ -1187,7 +1300,9 @@ void MainWindow_Create(HWND hWnd) {
 	SetParent(dtpHistoryDate->hWnd, HistoryReportCanvas->hWnd);				//Set date/time pickers and slider as child window of canvases
 	SetParent(dtpHistoryTime->hWnd, HistoryReportCanvas->hWnd);
 	SetParent(dtpDailyDate->hWnd, DailyReportCanvas->hWnd);
+	SetParent(dtpMonthlyDate->hWnd, MonthlyReportCanvas->hWnd);
 	SetParent(sliHistoryTime->hWnd, HistoryReportCanvas->hWnd);
+	SendMessage(dtpMonthlyDate->hWnd, DTM_SETFORMAT, 0, (LPARAM)L"yyyy' / 'MM");
 	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
 
 	//Set canvas positions
