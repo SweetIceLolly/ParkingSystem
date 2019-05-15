@@ -1,1 +1,34 @@
-﻿  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe
+﻿  ParkingSystem.cpp
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(199): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(202): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(205): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(206): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(208): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(209): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(211): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(212): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(214): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(215): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(410): warning C4244: 'return' : conversion from 'double' to 'float', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(837): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(839): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(846): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(852): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(858): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(882): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(886): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(899): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(932): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(933): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(967): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(968): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(987): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(988): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1058): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1071): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1100): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1125): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1138): warning C4018: '<' : signed/unsigned mismatch
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1211): warning C4244: 'return' : conversion from 'double' to 'int', possible loss of data
+k:\exes\programs\source\parkingsystem\parkingsystem\parkingsystem.cpp(1213): warning C4244: 'return' : conversion from 'double' to 'int', possible loss of data
+  ParkingSystem.vcxproj -> K:\EXEs\Programs\Source\ParkingSystem\Debug\ParkingSystem.exe

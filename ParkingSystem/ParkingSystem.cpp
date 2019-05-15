@@ -7,6 +7,10 @@ File:           ParkingSystem.cpp
 
 #include "FileManager.h"
 
+/* Define constants */
+const int						GRAPH_MARGIN = 70;							//Graph margin size
+const int						GRAPH_ARROW_SIZE = 8;						//Axis arrow size
+
 /* ListView sorting info to be passed to ListViewCompareFunction */
 struct lvSortInfo {
 	bool						Ascending;									//Ascending or descending
@@ -255,6 +259,7 @@ void MainWindow_Resize(int Width, int Height) {
 	if (CurrStatus == 8 || CurrStatus == 0) {								//Viewing monthly report
 		tabReport->Size(Width, Height);
 		MonthlyReportCanvas->Size(Width, Height - TabHeaderHeight);
+		dtpMonthlyDate->Move(Width - 130, 25);
 	}
 }
 
@@ -789,66 +794,74 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 Description:	To handle paint event of daily report canvas
 */
 void DailyReportCanvas_Paint() {
-	//Find best-fit width and height of the graph
-	const int MARGIN = 70;
-	const int ARROW_SIZE = 8;
-
 	int DailyPeak = ParkedCarsCount + DailyEnter;												//Find maximum number of cars in the day
-	int GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,
-		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 100;					//Calculate graph size
-	int xSpace = (GraphW - ARROW_SIZE) / 25, ySpace = (GraphH - ARROW_SIZE) / (DailyPeak + 1);	//Calculate sapce between scales
+	int GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - GRAPH_MARGIN * 2,
+		GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - GRAPH_MARGIN * 2 - 100;				//Calculate graph size to find best-fit width and height of the graph
+	int xSpace = (GraphW - GRAPH_ARROW_SIZE) / 25,
+		ySpace = (GraphH - GRAPH_ARROW_SIZE) / (DailyPeak + 1);									//Calculate sapce between scales
 	int CurrX, CurrY; 																			//Current graph point position
 	int PrevX, PrevY;																			//Previous graph point position
 	int i;																						//For-control
 
-	//Paint
+	//Clear canvas
 	DailyReportCanvas->Cls();
 	if (GraphH < 40 || GraphW < 380)															//Area too small to paint
 		return;
-	DailyReportCanvas->DrawLine(MARGIN, MARGIN + GraphH, MARGIN + GraphW, MARGIN + GraphH);		//Draw X axis and its label
-	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROW_SIZE, MARGIN + GraphH - ARROW_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
-	DailyReportCanvas->DrawLine(MARGIN + GraphW - ARROW_SIZE, MARGIN + GraphH + ARROW_SIZE / 2, MARGIN + GraphW, MARGIN + GraphH);
-	DailyReportCanvas->Print(MARGIN + GraphW, MARGIN + GraphH + 15, L"Time (hr)");
-	DailyReportCanvas->DrawLine(MARGIN, MARGIN, MARGIN, MARGIN + GraphH);						//Draw Y axis and its label
-	DailyReportCanvas->DrawLine(MARGIN - ARROW_SIZE / 2, MARGIN + ARROW_SIZE, MARGIN, MARGIN);
-	DailyReportCanvas->DrawLine(MARGIN + ARROW_SIZE / 2, MARGIN + ARROW_SIZE, MARGIN, MARGIN);
-	DailyReportCanvas->Print(MARGIN - 60, MARGIN - 25, L"No. of Cars");
-	for (i = 1; i < 25; i++) {																	//Draw scales of X axis
-		CurrX = MARGIN + xSpace * i;
-		DailyReportCanvas->DrawLine(CurrX, MARGIN + GraphH, CurrX, MARGIN + GraphH - 5);
-		DailyReportCanvas->Print(CurrX - 5, MARGIN + GraphH + 10, L"%i", i - 1);
+
+	//Draw X axis and its label
+	DailyReportCanvas->DrawLine(GRAPH_MARGIN, GRAPH_MARGIN + GraphH, GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(GRAPH_MARGIN + GraphW - GRAPH_ARROW_SIZE, GRAPH_MARGIN + GraphH - GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(GRAPH_MARGIN + GraphW - GRAPH_ARROW_SIZE, GRAPH_MARGIN + GraphH + GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH);
+	DailyReportCanvas->Print(GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH + 15, L"Time (hr)");
+
+	//Draw Y axis and its label
+	DailyReportCanvas->DrawLine(GRAPH_MARGIN, GRAPH_MARGIN, GRAPH_MARGIN, GRAPH_MARGIN + GraphH);
+	DailyReportCanvas->DrawLine(GRAPH_MARGIN - GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GRAPH_ARROW_SIZE, GRAPH_MARGIN, GRAPH_MARGIN);
+	DailyReportCanvas->DrawLine(GRAPH_MARGIN + GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GRAPH_ARROW_SIZE, GRAPH_MARGIN, GRAPH_MARGIN);
+	DailyReportCanvas->Print(GRAPH_MARGIN - 60, GRAPH_MARGIN - 25, L"No. of Cars");
+
+	//Draw scales of X, Y axis
+	for (i = 1; i < 25; i++) {
+		CurrX = GRAPH_MARGIN + xSpace * i;
+		DailyReportCanvas->DrawLine(CurrX, GRAPH_MARGIN + GraphH, CurrX, GRAPH_MARGIN + GraphH - 5);
+		DailyReportCanvas->Print(CurrX - 5, GRAPH_MARGIN + GraphH + 10, L"%i", i - 1);
 	}
-	for (i = 1; i < DailyPeak + 2; i++)	{														//Draw scales of Y axis
-		CurrY = MARGIN + ySpace * i;
-		DailyReportCanvas->DrawLine(MARGIN, CurrY, MARGIN + 5, CurrY);
-		DailyReportCanvas->Print(MARGIN - 25, CurrY - 5, L"%i", DailyPeak - i + 1);
+	for (i = 1; i < DailyPeak + 2; i++)	{
+		CurrY = GRAPH_MARGIN + ySpace * i;
+		DailyReportCanvas->DrawLine(GRAPH_MARGIN, CurrY, GRAPH_MARGIN + 5, CurrY);
+		DailyReportCanvas->Print(GRAPH_MARGIN - 25, CurrY - 5, L"%i", DailyPeak - i + 1);
 	}
+
+	//Draw the graph
 	DailyReportCanvas->SetPenProps(1, RGB(0, 0, 255));											//Switch to blue pen
-	for (i = 0; i < DailyGraphDataPoints.size(); i++) {											//Draw the graph
+	for (i = 0; i < DailyGraphDataPoints.size(); i++) {											//Process all data points
 		if (i > 0) {																				//If this is not the first data point
-			CurrX = MARGIN + xSpace * (DailyGraphDataPoints[i].Hour + 1);								//Find position of current data point
-			CurrY = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[i].Value + 1);
+			CurrX = GRAPH_MARGIN + xSpace * (DailyGraphDataPoints[i].Hour + 1);							//Find position of current data point
+			CurrY = GRAPH_MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[i].Value + 1);
 			DailyReportCanvas->DrawLine(PrevX, PrevY, CurrX, CurrY);									//Line data point with previous one
 			PrevX = CurrX;
 			PrevY = CurrY;
 		}
 		else {																						//If this is the first data point
-			PrevX = MARGIN + xSpace * (DailyGraphDataPoints[i].Hour + 1);								//Find position of the first point
-			PrevY = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[i].Value + 1);
+			PrevX = GRAPH_MARGIN + xSpace * (DailyGraphDataPoints[i].Hour + 1);							//Find position of the first point
+			PrevY = GRAPH_MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[i].Value + 1);
 		}
 	}
 	if (DailyGraphDataPoints.size() > 0) {															//If there are any data points, connect two ends of graph with margin
-		CurrX = MARGIN + xSpace * (DailyGraphDataPoints[0].Hour + 1);									//Left end
-		PrevY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + 1);
-		CurrY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + (DailyGraphDataPoints[0].Enter ? -1 : 1) + 1);
-		DailyReportCanvas->DrawLine(MARGIN + xSpace, PrevY, CurrX, CurrY);
-		CurrX = MARGIN + xSpace * (DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Hour + 1);		//Right end
-		CurrY = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Value + 1);
-		DailyReportCanvas->DrawLine(CurrX, CurrY, MARGIN + xSpace * 24, CurrY);
+		//Connect the first data point with left end
+		CurrX = GRAPH_MARGIN + xSpace * (DailyGraphDataPoints[0].Hour + 1);
+		PrevY = GRAPH_MARGIN + ySpace * (DailyPeak - ParkedCarsCount + 1);
+		CurrY = GRAPH_MARGIN + ySpace * (DailyPeak - ParkedCarsCount + (DailyGraphDataPoints[0].Enter ? -1 : 1) + 1);
+		DailyReportCanvas->DrawLine(GRAPH_MARGIN + xSpace, PrevY, CurrX, CurrY);
+
+		//Connect the last data point with right end
+		CurrX = GRAPH_MARGIN + xSpace * (DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Hour + 1);
+		CurrY = GRAPH_MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[DailyGraphDataPoints.size() - 1].Value + 1);
+		DailyReportCanvas->DrawLine(CurrX, CurrY, GRAPH_MARGIN + xSpace * 24, CurrY);
 	}
-	else {																							//If there is no any data points, draw a plain line
-		CurrY = MARGIN + ySpace * (DailyPeak - ParkedCarsCount + 1);
-		DailyReportCanvas->DrawLine(MARGIN + xSpace, CurrY, MARGIN + xSpace * 24, CurrY);
+	else {																							//If there are no any data points, draw a plain line
+		CurrY = GRAPH_MARGIN + ySpace * (DailyPeak - ParkedCarsCount + 1);
+		DailyReportCanvas->DrawLine(GRAPH_MARGIN + xSpace, CurrY, GRAPH_MARGIN + xSpace * 24, CurrY);
 	}
 	DailyReportCanvas->SetPenProps(1, 0);														//Switch back to black pen
 }
@@ -933,20 +946,17 @@ Args:			X, Y: Position of cursor
 */
 void DailyReportCanvas_MouseMove(int X, int Y) {
 	if (DailyGraphDataPoints.size() > 0) {										//If there are any data points
-		const int	MARGIN = 70;
-		const int	ARROW_SIZE = 8;
-
 		static int	PrevMinSpaceIndex = -1;											//Previously selected data point index
 		
-		int			GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - MARGIN * 2,	//Calculate graph size
-					GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - MARGIN * 2 - 100;
-
+		//Calculate graph size
+		int			GraphW = DailyReportCanvas->bi.bmiHeader.biWidth - GRAPH_MARGIN * 2,
+					GraphH = DailyReportCanvas->bi.bmiHeader.biHeight - GRAPH_MARGIN * 2 - 100;
 		if (GraphH < 40 || GraphW < 380)											//Area too small to paint
 			return;
 
 		int			DailyPeak = ParkedCarsCount + DailyEnter;						//Find maximum number of cars in the day
-		int			xSpace = (GraphW - ARROW_SIZE) / 25,							//Find X, Y scale separation
-					ySpace = (GraphH - ARROW_SIZE) / (DailyPeak + 1);
+		int			xSpace = (GraphW - GRAPH_ARROW_SIZE) / 25,						//Find X, Y scale separation
+					ySpace = (GraphH - GRAPH_ARROW_SIZE) / (DailyPeak + 1);
 		int			MinSpace;														//Minimum separation from data point to cursor
 		int			MinSpaceIndex = 0;												//The index with minimum separation from data point to cursor
 		int			CurrSpace;														//Current separation from data point to cursor
@@ -955,7 +965,7 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 		int			i;																//For-control
 
 		for (i = 0; i < DailyGraphDataPoints.size(); i++) {							//Find the nearest data point
-			CurrSpace = abs(X - MARGIN - xSpace * (DailyGraphDataPoints[i].Hour + 1));
+			CurrSpace = abs(X - GRAPH_MARGIN - xSpace * (DailyGraphDataPoints[i].Hour + 1));
 			if (i == 0)
 				MinSpace = CurrSpace;
 			else {
@@ -973,44 +983,44 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 
 		//Draw dash lines to X axis and Y axis
 		DailyReportCanvas->SetPenProps(1, 0, PS_DASH);
-		yPos = MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[MinSpaceIndex].Value + 1);
-		DailyReportCanvas->DrawLine(MARGIN, yPos, MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1), yPos);
-		xPos = MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1);
-		DailyReportCanvas->DrawLine(xPos, yPos, xPos, GraphH + MARGIN);
+		yPos = GRAPH_MARGIN + ySpace * (DailyPeak - DailyGraphDataPoints[MinSpaceIndex].Value + 1);
+		DailyReportCanvas->DrawLine(GRAPH_MARGIN, yPos, GRAPH_MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1), yPos);
+		xPos = GRAPH_MARGIN + xSpace * (DailyGraphDataPoints[MinSpaceIndex].Hour + 1);
+		DailyReportCanvas->DrawLine(xPos, yPos, xPos, GraphH + GRAPH_MARGIN);
 		DailyReportCanvas->SetPenProps(1, 0, PS_SOLID);
 		InvalidateRgn(DailyReportCanvas->hWnd, NULL, TRUE);
 
 		//Show related info
 		lpLogInfo = DailyGraphDataPoints[MinSpaceIndex].lpLogInfo;
-		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 50, L"Cars Entered Today: %i", DailyEnter);
-		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 70, L"Cars Left Today: %i", DailyExit);
-		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 90, L"Daily Income: $%.2f", DailyIncome);
-		DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 110, L"No. of Cars in the park: %i", DailyGraphDataPoints[MinSpaceIndex].Value);
-		if (DailyGraphDataPoints[MinSpaceIndex].Enter) {
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 50, L"Event: %s", L"Car Entered");
-			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 130, L"Time: %02u:%02u:%02u",
+		DailyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 50, L"Cars Entered Today: %i", DailyEnter);
+		DailyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 70, L"Cars Left Today: %i", DailyExit);
+		DailyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 90, L"Daily Income: $%.2f", DailyIncome);
+		DailyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 110, L"No. of Cars in the park: %i", DailyGraphDataPoints[MinSpaceIndex].Value);
+		if (DailyGraphDataPoints[MinSpaceIndex].Enter) {							//If the record is 'Enter'
+			DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 50, L"Event: %s", L"Car Entered");
+			DailyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 130, L"Time: %02u:%02u:%02u",
 				lpLogInfo->EnterTime.wHour, lpLogInfo->EnterTime.wMinute, lpLogInfo->EnterTime.wSecond);
 		}
-		else {
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 50, L"Event: %s", L"Car Left");
-			DailyReportCanvas->Print(MARGIN, GraphH + MARGIN + 130, L"Time: %02u:%02u:%02u",
+		else {																		//If the record is 'Leave'
+			DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 50, L"Event: %s", L"Car Left");
+			DailyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 130, L"Time: %02u:%02u:%02u",
 				lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
 		}
-		DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 70, L"Car Number: %s", lpLogInfo->CarNumber);
+		DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 70, L"Car Number: %s", lpLogInfo->CarNumber);
 		if (lpLogInfo->LeaveTime.wYear) {											//If the car has left
 			int	HoursParked;
 
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 90,
+			DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 90,
 				L"Car Leave Time: %04u-%02u-%02u %02u:%02u:%02u",
 				lpLogInfo->LeaveTime.wYear, lpLogInfo->LeaveTime.wMonth, lpLogInfo->LeaveTime.wDay,
 				lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 130,
+			DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 130,
 				L"Fee Paid: $%.2f", CalcFee(&(lpLogInfo->EnterTime), &(lpLogInfo->LeaveTime), &HoursParked));
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 110,
+			DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 110,
 				L"Hours Parked: %i", HoursParked);
 		}
-		else
-			DailyReportCanvas->Print(MARGIN + 200, GraphH + MARGIN + 90,
+		else 																		//If the car hasn't left
+			DailyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 90,
 				L"Still Parking");
 	}
 }
@@ -1019,12 +1029,59 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 Description:	To handle paint event of monthly report canvas
 */
 void MonthlyReportCanvas_Paint() {
-	//Find best-fit width and height of the graph
-	const int MARGIN = 70;
-	const int ARROW_SIZE = 8;
+	int GraphW = MonthlyReportCanvas->bi.bmiHeader.biWidth - GRAPH_MARGIN * 2,
+		GraphH = MonthlyReportCanvas->bi.bmiHeader.biHeight - GRAPH_MARGIN * 2 - 100;			//Calculate graph size to find best-fit width and height of the graph
+	int xSpace = (GraphW - GRAPH_ARROW_SIZE) / (MonthlyGraphDataPoints.size() + 1),
+		ySpace = (GraphH - GRAPH_ARROW_SIZE) / (MonthlyMaxValue + 1);							//Calculate sapce between scales
+	int CurrX, CurrY; 																			//Current graph point position
+	int PrevX, PrevY;																			//Previous graph point position
+	int i;																						//For-control
 
+	//Paint
 	MonthlyReportCanvas->Cls();
-	/* ToDo: draw the graph */
+	if (GraphH < 40 || GraphW < 380)															//Area too small to paint
+		return;
+
+	//Draw X axis and its label
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN, GRAPH_MARGIN + GraphH, GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH);
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN + GraphW - GRAPH_ARROW_SIZE, GRAPH_MARGIN + GraphH - GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH);
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN + GraphW - GRAPH_ARROW_SIZE, GRAPH_MARGIN + GraphH + GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH);
+	MonthlyReportCanvas->Print(GRAPH_MARGIN + GraphW, GRAPH_MARGIN + GraphH + 15, L"Day");
+
+	//Draw Y axis and its label
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN, GRAPH_MARGIN, GRAPH_MARGIN, GRAPH_MARGIN + GraphH);
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN - GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GRAPH_ARROW_SIZE, GRAPH_MARGIN, GRAPH_MARGIN);
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN + GRAPH_ARROW_SIZE / 2, GRAPH_MARGIN + GRAPH_ARROW_SIZE, GRAPH_MARGIN, GRAPH_MARGIN);
+	MonthlyReportCanvas->Print(GRAPH_MARGIN - 60, GRAPH_MARGIN - 25, L"No. of Cars");
+
+	//Draw scales of X, Y axis
+	for (i = 1; i < MonthlyGraphDataPoints.size() + 1; i++) {
+		CurrX = GRAPH_MARGIN + xSpace * i;
+		MonthlyReportCanvas->DrawLine(CurrX, GRAPH_MARGIN + GraphH, CurrX, GRAPH_MARGIN + GraphH - 5);
+		MonthlyReportCanvas->Print(CurrX - 5, GRAPH_MARGIN + GraphH + 10, L"%i", i);
+	}
+	for (i = 1; i < MonthlyMaxValue + 2; i++)	{
+		CurrY = GRAPH_MARGIN + ySpace * i;
+		MonthlyReportCanvas->DrawLine(GRAPH_MARGIN, CurrY, GRAPH_MARGIN + 5, CurrY);
+		MonthlyReportCanvas->Print(GRAPH_MARGIN - 25, CurrY - 5, L"%i", MonthlyMaxValue - i + 1);
+	}
+
+	//Draw the graph
+	MonthlyReportCanvas->SetPenProps(1, RGB(0, 0, 255));										//Switch to blue pen
+	for (i = 0; i < MonthlyGraphDataPoints.size(); i++) {										//Process all data points
+		if (i > 0) {																				//If this is not the first data point
+			CurrX = GRAPH_MARGIN + xSpace * (i + 1);													//Find position of current data point
+			CurrY = GRAPH_MARGIN + ySpace * (MonthlyMaxValue - MonthlyGraphDataPoints[i].Value + 1);
+			MonthlyReportCanvas->DrawLine(PrevX, PrevY, CurrX, CurrY);									//Line data point with previous one
+			PrevX = CurrX;
+			PrevY = CurrY;
+		}
+		else {																						//If this is the first data point
+			PrevX = GRAPH_MARGIN + xSpace * (i + 1);													//Find position of the first point
+			PrevY = GRAPH_MARGIN + ySpace * (MonthlyMaxValue - MonthlyGraphDataPoints[i].Value + 1);
+		}
+	}
+	MonthlyReportCanvas->SetPenProps(1, 0);														//Switch back to black pen
 }
 
 /*
@@ -1085,14 +1142,14 @@ void dtpMonthlyDate_DateTimeChanged() {
 			lpCurrLog->EnterTime.wMonth == stSelectedTime.wMonth) {					//The car entered in the specified month
 
 			MonthlyEnter++;
-			MonthlyGraphDataPoints[stSelectedTime.wMonth].DailyEnter++;
+			MonthlyGraphDataPoints[lpCurrLog->EnterTime.wDay - 1].DailyEnter++;
 		}
 		if (lpCurrLog->LeaveTime.wYear == stSelectedTime.wYear &&
 			lpCurrLog->LeaveTime.wMonth == stSelectedTime.wMonth) {					//The car left in the specified month
 
 			MonthlyExit++;
-			MonthlyGraphDataPoints[stSelectedTime.wMonth].DailyExit++;
-			MonthlyGraphDataPoints[stSelectedTime.wMonth].DailyFee += lpCurrLog->Fee;
+			MonthlyGraphDataPoints[lpCurrLog->EnterTime.wDay - 1].DailyExit++;
+			MonthlyGraphDataPoints[lpCurrLog->EnterTime.wDay - 1].DailyFee += lpCurrLog->Fee;
 		}
 	}
 
@@ -1117,7 +1174,7 @@ Description:	To handle mouse move event of monthly report canvas
 Args:			X, Y: Position of cursor
 */
 void MonthlyReportCanvas_MouseMove(int X, int Y) {
-
+	/* ToDo: Draw lines to X, Y axis */
 }
 
 /*
