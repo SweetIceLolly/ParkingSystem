@@ -238,28 +238,28 @@ void MainWindow_Resize(int Width, int Height) {
 		btnCancelLogin->Move(PasswordFramePos.x + 190, PasswordFramePos.y + 75);
 	}
 	if (CurrStatus == 5 || CurrStatus == 0) {								//Viewing position report
-		tabReport->Size(Width, Height);
-		PositionReportCanvas->Size(Width, Height - TabHeaderHeight);
+		tabReport->Size(Width, Height);											//Adjust report tab size
+		PositionReportCanvas->Size(Width, Height - TabHeaderHeight);			//Adjust position report canvas size
 	}
 	if (CurrStatus == 6 || CurrStatus == 0) {								//Viewing history report
-		int DrawPos;
+		int DrawPos;															//X position of history report graph
 
-		tabReport->Size(Width, Height);
-		HistoryReportCanvas->Size(Width, Height - TabHeaderHeight);
+		tabReport->Size(Width, Height);											//Adjust report tab size
+		HistoryReportCanvas->Size(Width, Height - TabHeaderHeight);				//Adjust history report canvas size
 		DrawPos = (HistoryReportCanvas->bi.bmiHeader.biWidth - 60) / 3 * 2;
-		dtpHistoryDate->Move(DrawPos + 45, 30);
+		dtpHistoryDate->Move(DrawPos + 45, 30);									//Adjust date time picker control position
 		dtpHistoryTime->Move(DrawPos + 60 + dtpHistoryDate->CtlRect.right - dtpHistoryDate->CtlRect.left, 30);
-		sliHistoryTime->Move(DrawPos + 45, 60);
+		sliHistoryTime->Move(DrawPos + 45, 60);									//Adjust slider control position
 	}
 	if (CurrStatus == 7 || CurrStatus == 0) {								//Viewing daily report
-		tabReport->Size(Width, Height);
-		DailyReportCanvas->Size(Width, Height - TabHeaderHeight);
-		dtpDailyDate->Move(Width - 130, 25);
+		tabReport->Size(Width, Height);											//Adjust report tab size
+		DailyReportCanvas->Size(Width, Height - TabHeaderHeight);				//Adjust daily report canvas size
+		dtpDailyDate->Move(Width - 130, 25);									//Adjust date time picker control position
 	}
 	if (CurrStatus == 8 || CurrStatus == 0) {								//Viewing monthly report
-		tabReport->Size(Width, Height);
-		MonthlyReportCanvas->Size(Width, Height - TabHeaderHeight);
-		dtpMonthlyDate->Move(Width - 130, 25);
+		tabReport->Size(Width, Height);											//Adjust report tab size
+		MonthlyReportCanvas->Size(Width, Height - TabHeaderHeight);				//Adjust monthly report canvas size
+		dtpMonthlyDate->Move(Width - 130, 25);									//Adjust date time picker control position
 	}
 }
 
@@ -960,15 +960,15 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 		int			MinSpace;														//Minimum separation from data point to cursor
 		int			MinSpaceIndex = 0;												//The index with minimum separation from data point to cursor
 		int			CurrSpace;														//Current separation from data point to cursor
-		int			xPos, yPos;														//X/Y position of the dash line
+		int			xPos, yPos;														//X, Y position of the dash line
 		LogInfo		*lpLogInfo;														//lpLogInfo of the nearest data point
 		int			i;																//For-control
 
 		for (i = 0; i < DailyGraphDataPoints.size(); i++) {							//Find the nearest data point
 			CurrSpace = abs(X - GRAPH_MARGIN - xSpace * (DailyGraphDataPoints[i].Hour + 1));
-			if (i == 0)
+			if (i == 0)																//Don't compare at the first point, mark it as minimum
 				MinSpace = CurrSpace;
-			else {
+			else {																	//Compare at other points, then find out the point with minimum distance
 				if (CurrSpace < MinSpace) {
 					MinSpace = CurrSpace;
 					MinSpaceIndex = i;
@@ -1092,12 +1092,12 @@ void dtpMonthlyDate_DateTimeChanged() {
 	int					MonthDays;												//Number of days in the specific month
 	LogInfo				*lpCurrLog;												//Pointer to current log
 	int					i;														//For-control
-	int					CurrParkedCarsCount = 0;								//Number of current parked cars
+	int					CurrParkedCarsCount = 0;								//Number of parked cars before the seleced date
 
 	//Initialize variables
 	MonthlyGraphDataPoints.clear();
 	MonthlyMaxValue = 0;
-	MonthlyEnter = MonthlyExit = DailyIncome = 0;
+	MonthlyEnter = MonthlyExit = MonthlyIncome = 0;
 	dtpMonthlyDate->GetTime(&stSelectedTime);									//Get selected date from date picker
 
 	switch (stSelectedTime.wMonth) {											//Get number of days of the selected month
@@ -1174,7 +1174,57 @@ Description:	To handle mouse move event of monthly report canvas
 Args:			X, Y: Position of cursor
 */
 void MonthlyReportCanvas_MouseMove(int X, int Y) {
-	/* ToDo: Draw lines to X, Y axis */
+	static int	PrevMinSpaceIndex = -1;											//Previously selected data point index
+
+	//Calculate graph size
+	int			GraphW = MonthlyReportCanvas->bi.bmiHeader.biWidth - GRAPH_MARGIN * 2,
+				GraphH = MonthlyReportCanvas->bi.bmiHeader.biHeight - GRAPH_MARGIN * 2 - 100;
+	if (GraphH < 40 || GraphW < 380)											//Area too small to paint
+		return;
+
+	int			xSpace = (GraphW - GRAPH_ARROW_SIZE) / (MonthlyGraphDataPoints.size() + 1),
+				ySpace = (GraphH - GRAPH_ARROW_SIZE) / (MonthlyMaxValue + 1);	//Calculate sapce between scales
+	int			MinSpace;														//Minimum separation from data point to cursor
+	int			MinSpaceIndex = 0;												//The index with minimum separation from data point to cursor 
+	int			CurrSpace;														//Current separation from data point to cursor
+	int			xPos, yPos;														//X, Y position of the dash line
+	SYSTEMTIME	stSelectedTime;													//The time user selected
+
+	for (int i = 0; i < MonthlyGraphDataPoints.size(); i++) {					//Find the nearest data point
+		CurrSpace = abs(X - GRAPH_MARGIN - xSpace * (i + 1));
+		if (i == 0)																	//Don't compare at the first point, mark it as minimum
+			MinSpace = CurrSpace;
+		else {																		//Compare at other points, then find out the point with minimum distance
+			if (CurrSpace < MinSpace) {
+				MinSpace = CurrSpace;
+				MinSpaceIndex = i;
+			}
+		}
+	}
+
+	if (PrevMinSpaceIndex == MinSpaceIndex)										//If the index remains unchanged, don't paint to reduce CPU usage
+		return;
+	else
+		PrevMinSpaceIndex = MinSpaceIndex;											//Otherwise record the new selected index
+
+	//Draw dash lines to X axis and Y axis
+	MonthlyReportCanvas->SetPenProps(1, 0, PS_DASH);
+	yPos = GRAPH_MARGIN + ySpace * (MonthlyMaxValue - MonthlyGraphDataPoints[MinSpaceIndex].Value + 1);
+	MonthlyReportCanvas->DrawLine(GRAPH_MARGIN, yPos, GRAPH_MARGIN + xSpace * (MinSpaceIndex + 1), yPos);
+	xPos = GRAPH_MARGIN + xSpace * (MinSpaceIndex + 1);
+	MonthlyReportCanvas->DrawLine(xPos, yPos, xPos, GraphH + GRAPH_MARGIN);
+	MonthlyReportCanvas->SetPenProps(1, 0, PS_SOLID);
+	InvalidateRgn(MonthlyReportCanvas->hWnd, NULL, TRUE);
+
+	//Show related info
+	dtpMonthlyDate->GetTime(&stSelectedTime);									//Get selected date from date picker
+	MonthlyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 50, L"Total Cars Entered: %i", MonthlyEnter);
+	MonthlyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 70, L"Total Cars Left: %i", MonthlyExit);
+	MonthlyReportCanvas->Print(GRAPH_MARGIN, GraphH + GRAPH_MARGIN + 90, L"Total Imcome: $%.2f", MonthlyIncome);
+	MonthlyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 50, L"Date: %04u-%02u-%02u",
+		stSelectedTime.wYear, stSelectedTime.wMonth, MinSpaceIndex + 1);
+	MonthlyReportCanvas->Print(GRAPH_MARGIN + 200, GraphH + GRAPH_MARGIN + 70, L"No. of Cars After the Day: %i",
+		MonthlyGraphDataPoints[MinSpaceIndex].Value);
 }
 
 /*
@@ -1263,20 +1313,20 @@ void tabReport_TabSelected() {
 
 	case 2:																	//Daily report
 		CurrStatus = 7;
+		dtpDailyDate_DateTimeChanged();											//Invoke canvas redraw
 		PositionReportCanvas->SetVisible(false);
 		HistoryReportCanvas->SetVisible(false);
 		DailyReportCanvas->SetVisible(true);
 		MonthlyReportCanvas->SetVisible(false);
-		dtpDailyDate_DateTimeChanged();											//Invoke canvas redraw
 		break;
 
 	case 3:																	//Monthly report
 		CurrStatus = 8;
+		dtpMonthlyDate_DateTimeChanged();										//Invoke canvas redraw
 		PositionReportCanvas->SetVisible(false);
 		HistoryReportCanvas->SetVisible(false);
 		DailyReportCanvas->SetVisible(false);
 		MonthlyReportCanvas->SetVisible(true);
-		MonthlyReportCanvas_Paint();											//Invoke canvas redraw
 		break;
 	}
 
