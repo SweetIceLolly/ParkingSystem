@@ -720,6 +720,37 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 /*
+Description:    Settings window procedure
+Args:           hWnd: Handle to the window
+uMsg: Message code
+wParam, lParam: Extra infos
+Return:         Result of message handling
+*/
+INT_PTR CALLBACK SettingsWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+	case WM_INITDIALOG:															//Window created
+		((void(*)(HWND))lParam)(hWnd);												//Invoke MainWindow_Create()
+
+	case WM_COMMAND:															//Control commands
+		if (lParam != 0) {															//Notification from a control
+			if (HIWORD(wParam) == BN_CLICKED) {											//Button clicked notification code															/
+				((VOID_EVENT)(GetProp((HWND)lParam, L"ClickEvent")))();						//Invoke Button_Click()
+			}
+		}
+		break;
+
+	case WM_CLOSE:																//Window closing
+		EnableWindow(hwndMainWindow, TRUE);											//Enable main window
+		DestroyWindow(hWnd);														//Close the window
+		return TRUE;
+
+	default:
+		return 0;
+	}
+	return 0;
+}
+
+/*
 Description:    Password editbox procedure
 Args:           hWnd: Handle to the window
                 uMsg: Message code

@@ -19,6 +19,7 @@ IceEncryptedFile::IceEncryptedFile(const wchar_t *FilePath) {
 	fsFile.open(FilePath, ios::binary | ios::in | ios::out);								//Attempt to open the file with read/write privilege
 	if (fsFile.fail()) {
 		fsFile.open(FilePath, ios::binary | ios::out);											//Create log file if it doesn't exist, open it with write privilege only
+		CreatedNewFile = true;																	//Mark as created a new file
 		if (fsFile.fail()) {																		//Path not accessible
 			fsFile.close();
 			if (MessageBox(GetMainWindowHandle(),
@@ -142,9 +143,7 @@ bool IceEncryptedFile::SaveFile() {
 	for (int i = 0; i < szFile; Buffer.get()[i++] ^= (487 ^ FileContent.Password[i % KeyLen]));	//Encrypt binary data
 	fsFile.seekg(0, ios::beg);
 	fsFile.write((char*)Buffer.get(), szFile);													//Write to the file
-	fsFile.flush();																				//Update the content of the file
-
-	return true;
+	return !fsFile.flush().bad();																//Update the content of the file
 }
 
 /*

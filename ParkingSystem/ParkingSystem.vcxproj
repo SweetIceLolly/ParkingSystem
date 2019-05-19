@@ -14,7 +14,6 @@
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="MessageHandler.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SettingsWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FileManager.cpp" />

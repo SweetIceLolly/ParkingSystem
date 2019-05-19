@@ -16,7 +16,9 @@ File:           MessageHandler.h
 void RecordProgramInstance(HINSTANCE hInstance);										//This copys hInstance to ProgramInstance
 HINSTANCE GetProgramInstance();															//This retrieves hInstance from ProgramInstance
 HWND GetMainWindowHandle();																//This retrieves main window handle
+void* GetLogFilePtr();																	//This retrieves a pointer to the LogFile
 INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);    //Main window procedure
+INT_PTR CALLBACK SettingsWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);//Settings window procedure
 LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);        //Button control procedure
 LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//Password editbox control procedure
 LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//Car number editbox control procedure
@@ -38,6 +40,9 @@ void mnuSearchLog_Click();
 void MainWindow_Resize(int, int);				//Window_Resize
 void btnLogin_Click();							//Login button click
 void btnEnterOrExit_Click();					//Car enter/exit button click
+
+/* Settings window events */
+void SettingsWindow_Create(HWND);				//Settings window created
 
 /* Event types */
 typedef void(*VOID_EVENT)();					//For void ***() events

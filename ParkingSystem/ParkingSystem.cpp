@@ -177,6 +177,7 @@ void HidePaymentFrame() {
 Description:    Show payment-related controls
 */
 void ShowPaymentFrame() {
+	labPrice->SetText(L"Price: $%.2f/hr, 20%% off if exceed 5 hrs", LogFile->FileContent.FeePerHour);		//Update price
 	labWelcome->SetVisible(true);
 	labPositionLeft->SetVisible(true);
 	labCarNumber->SetVisible(true);
@@ -294,6 +295,12 @@ void btnLogin_Click() {
 
 			//Update program status
 			CurrStatus = -1;
+
+			//If this is a new log file, ask user to modify the password
+			if (LogFile->CreatedNewFile) {
+				MessageBox(GetMainWindowHandle(), L"You should modify the password.", L"Prompt", MB_OK | MB_ICONINFORMATION);
+				mnuOptions_Click();
+			}
 		}
 		else {																	//Password incorrect
 			if (nPasswordTried--) {														//Decrease attempt times
@@ -1577,7 +1584,19 @@ void mnuReport_Click() {
 Description:	To handle Options menu event
 */
 void mnuOptions_Click() {
-	
+	//Disable main window
+	EnableWindow(GetMainWindowHandle(), FALSE);
+
+	//Create the settings window and pass SettingsWindow_Create() to the lParam of its WM_INITDIALOG message
+	DialogBoxParam(GetProgramInstance(), MAKEINTRESOURCE(IDD_SETTINGSWINDOW), NULL,
+		SettingsWindowProc, (LPARAM)SettingsWindow_Create);
+}
+
+/*
+Description:	Returns pointer of LogFile
+*/
+void* GetLogFilePtr() {
+	return LogFile.get();
 }
 
 /*

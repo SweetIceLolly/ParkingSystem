@@ -32,6 +32,7 @@ public:
 	fstream			fsFile;							//File input/output stream
 	RecordFile		FileContent;					//Record file content
 	bool			WithoutFile = false;			//If the user selected continue without log file
+	bool			CreatedNewFile = false;			//If the program created a new file (If so, the user should modify the default password)
 
 	IceEncryptedFile(const wchar_t *FilePath);
 	~IceEncryptedFile();
