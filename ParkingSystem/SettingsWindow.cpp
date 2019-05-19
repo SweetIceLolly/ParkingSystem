@@ -38,6 +38,12 @@ void cmdOK_Click() {
 		if (!lstrcmpW(PasswordBuffer, LogFile->FileContent.Password)) {					//Password match
 			edNewPassword->GetText(PasswordBuffer);
 			edConfirmPassword->GetText(ConfirmPasswordBuffer);
+			if (lstrlenW(PasswordBuffer) <= 0) {											//The user didn't enter a new password
+				MessageBox(SettingsWindowHandle, L"You must enter a new password!",
+					L"Failed to Change Password", MB_OK | MB_ICONEXCLAMATION);
+				SetFocus(edNewPassword->hWnd);
+				return;
+			}
 			if (!lstrcmpW(PasswordBuffer, ConfirmPasswordBuffer)) {							//New password equals confirm password
 				lstrcpyW(LogFile->FileContent.Password, PasswordBuffer);						//Store the new password
 			}
@@ -77,6 +83,39 @@ void cmdOK_Click() {
 }
 
 /*
+Description:	To handle key pressed event for textboxes
+Args:			Key: Ascii code of the pressed key
+				hMenu: Identifier of textboxes
+*/
+void Editbox_KeyPressed(int Key, int hMenu) {
+	if (Key == VK_RETURN) {													//Enter key pressed
+		switch (hMenu) {														//Control menu ID
+		case IDC_CURRENTPASSWORDEDIT:												//Current password edit
+			SendMessage(edNewPassword->hWnd, EM_SETSEL, 0, -1);
+			SetFocus(edNewPassword->hWnd);
+			break;
+
+		case IDC_NEWPASSWORDEDIT:													//New password edit
+			SendMessage(edConfirmPassword->hWnd, EM_SETSEL, 0, -1);
+			SetFocus(edConfirmPassword->hWnd);
+			break;
+
+		case IDC_CONFIRMPASSWORDEDIT:												//Confirm password edit
+			SendMessage(edFeePerHour->hWnd, EM_SETSEL, 0, -1);
+			SetFocus(edFeePerHour->hWnd);
+			break;
+
+		case IDC_FEEPERHOUREDIT:													//Fee per hour edit
+			cmdOK_Click();
+			break;
+		}
+	}
+	else if (Key == VK_ESCAPE) {											//Escape key pressed
+		cmdCancel_Click();														//Close the window
+	}
+}
+
+/*
 Description:    To handle settings window creation event
 */
 void SettingsWindow_Create(HWND hWnd) {
@@ -93,10 +132,10 @@ void SettingsWindow_Create(HWND hWnd) {
 		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 
 	//Bind controls with their corresponding classes
-	edCurrPassword = make_shared<IceEdit>(hWnd, IDC_CURRENTPASSWORDEDIT, (WNDPROC)NULL);
-	edNewPassword = make_shared<IceEdit>(hWnd, IDC_NEWPASSWORDEDIT, (WNDPROC)NULL);
-	edConfirmPassword = make_shared<IceEdit>(hWnd, IDC_CONFIRMPASSWORDEDIT, (WNDPROC)NULL);
-	edFeePerHour = make_shared<IceEdit>(hWnd, IDC_FEEPERHOUREDIT, (WNDPROC)NULL);
+	edCurrPassword = make_shared<IceEdit>(hWnd, IDC_CURRENTPASSWORDEDIT, SettingsWindowEditBoxWndProc);
+	edNewPassword = make_shared<IceEdit>(hWnd, IDC_NEWPASSWORDEDIT, SettingsWindowEditBoxWndProc);
+	edConfirmPassword = make_shared<IceEdit>(hWnd, IDC_CONFIRMPASSWORDEDIT, SettingsWindowEditBoxWndProc);
+	edFeePerHour = make_shared<IceEdit>(hWnd, IDC_FEEPERHOUREDIT, SettingsWindowEditBoxWndProc);
 	cmdOK = make_shared<IceButton>(hWnd, IDC_OKBUTTON, cmdOK_Click);
 	cmdCancel = make_shared<IceButton>(hWnd, IDC_CANCELBUTTON, cmdCancel_Click);
 

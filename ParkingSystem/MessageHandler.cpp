@@ -722,8 +722,8 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 /*
 Description:    Settings window procedure
 Args:           hWnd: Handle to the window
-uMsg: Message code
-wParam, lParam: Extra infos
+				uMsg: Message code
+				wParam, lParam: Extra infos
 Return:         Result of message handling
 */
 INT_PTR CALLBACK SettingsWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -803,4 +803,24 @@ LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
 	//Call the default window prodecure of the editbpx
 	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
+}
+
+/*
+Description:    Window procedure for editboxes in settings window. When the user presses Enter,
+				input focus should be changed to next control automacally
+Args:           hWnd: Handle to the window
+				uMsg: Message code
+				wParam, lParam: Extra infos
+Return:         Result of message handling
+*/
+LRESULT CALLBACK SettingsWindowEditBoxWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	EDIT_PROC_DEFAULT_OPERATION
+
+	if (uMsg == WM_CHAR) {													//Key pressed message
+		Editbox_KeyPressed(wParam, (int)GetMenu(hWnd));							//Handle the pressed key
+		return 0;
+	}
+
+	//Call the default window prodecure of the editbpx
+	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);;
 }
