@@ -69,6 +69,20 @@ public:
 };
 
 /*
+Description:		Tooltip class
+					This class contains tooltop-related functions for all controls
+*/
+class IceToolTip {
+private:
+	HWND				hWndToolTip;			//Handle to the created tooltip window
+
+public:
+	IceToolTip();
+	~IceToolTip();
+	void SetToolTip(HWND hWndTargetCtl, wchar_t *ToolTipText);
+};
+
+/*
 Description:		Basic control class
 					This class contains basic functions for all controls
 */
@@ -146,9 +160,10 @@ public:
 	HBITMAP				hBmp = 0;				//Canvas memory bitmap
 	VOID_EVENT			PaintEventFunction;		//Canvas_Paint() event
 	MOUSEMOVE_EVENT		MouseMoveEventFunction;	//Canvas_MouseMove() event
+	VOID_EVENT			DblClickEventFunction;	//Canvas_DoubleClick() event
 
 	IceCanvas(HWND ParentHwnd, COLORREF BackColor = 0xffffff,
-		VOID_EVENT PaintEvent = NULL, MOUSEMOVE_EVENT MouseMoveEvent = NULL);
+		VOID_EVENT PaintEvent = NULL, MOUSEMOVE_EVENT MouseMoveEvent = NULL, VOID_EVENT DblClickEvent = NULL);
 	~IceCanvas();
 	void DestroyCanvas();
 	template <class ...Args> void Print(int X, int Y, const wchar_t *FormatString, Args&&... FormatParams);

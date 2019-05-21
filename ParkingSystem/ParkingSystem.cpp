@@ -55,6 +55,7 @@ bool operator>(SYSTEMTIME st1, SYSTEMTIME st2) {
 
 /* Control bindings */
 shared_ptr<IceEncryptedFile>	LogFile;
+shared_ptr<IceToolTip>			ToolTip;
 shared_ptr<IceEdit>				edPassword;
 shared_ptr<IceButton>			btnLogin;
 shared_ptr<IceButton>			btnCancelLogin;
@@ -85,22 +86,26 @@ HWND							fraPasswordFrame;							//Password frame control handle
 /* Position info */
 vector<UINT>					CurrParkedCars;								//Cars currently parked, index of LogFile->FileContent.LogData
 bool							ParkingPos[100] = { 0 };					//Available parking positions (true = occupied)
+int								CurrSelectedPositionIndex;					//Index of log data of the selected parking position in position report
 
 /* History report related */
 LogInfo							HistoryParkedCars[100] = { 0 };				//Parked cars record for history report
 int								HistoryParkedCarsCount = 0;					//Number of parked cars for history report
+int								CurrSelectedHistoryIndex;					//Index of the selected parking position in history report
 
 /* Daily report related */
 vector<DailyDataPoint>			DailyGraphDataPoints;						//Daily report graph data point info
 int								DailyEnter, DailyExit;						//Number of enter/exit cars for daily report
 int								ParkedCarsCount;							//Number of parked cars before the selected day
 float							DailyIncome;								//Income of a day for daily report
+int								CurrSelectedHourSec;						//Hour value of the selected data point that converted to seconds
 
 /* Monthly report related */
 vector<MonthlyDataPoint>		MonthlyGraphDataPoints;						//Monthly report graph data point info
 int								MonthlyEnter, MonthlyExit;					//Number of enter/exit cars for monthly report
 float							MonthlyIncome;								//Income of a month for monthly report
 int								MonthlyMaxValue;							//Maximum value of the graph
+int								CurrSelectedDay;							//Selected date of monthly report
 
 /*
 Program status identifier
@@ -431,6 +436,8 @@ void btnEnterOrExit_Click() {
 
 	//Detect empty text
 	if (lstrlenW(CarNumber) == 0) {
+		labWelcome->SetText(L"Please Enter Your Car Number");					//Show error message
+		tmrRestoreWelcomeText->SetEnabled(true);
 		SetFocus(edCarNumber->hWnd);
 		return;
 	}
@@ -439,7 +446,6 @@ void btnEnterOrExit_Click() {
 	for (UINT i = 0; i < CurrParkedCars.size(); i++) {						//Search for the car number in the parked cars list
 		//Matched, means the car is leaving
 		if (!lstrcmpW(CarNumber, LogFile->FileContent.LogData[CurrParkedCars[i]].CarNumber)) {
-			labWelcome->SetText(L"Leave");
 			LogFile->FileContent.LogData[CurrParkedCars[i]].LeaveTime = CurrTime;		//Record leave time of the car
 			ParkingPos[LogFile->FileContent.LogData[CurrParkedCars[i]].CarPos] = false;	//Mark the parking position as unoccupied
 			
@@ -573,6 +579,7 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 
 	if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
 		if (PrevPos != -1) {													//If the cursor is in the position area previously
+			ToolTip->SetToolTip(PositionReportCanvas->hWnd, L"");					//Update tooltip
 			PrevPos = -1;
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
 				L"Occupied Positions: %i/100", CurrParkedCars.size());				//Show number of occupied positions
@@ -584,6 +591,8 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
 		PrevPos = SelPosX + SelPosY * 10;										//Remember the current position
 		if (ParkingPos[PrevPos]) {												//Position occupied
+			ToolTip->SetToolTip(PositionReportCanvas->hWnd,
+				L"Double click to view car info");									//Update tooltip
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
 				L"Parking Position #%i:", PrevPos + 1);
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 50,
@@ -595,6 +604,7 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 				if (ParkingPos[i])
 					nOccupiedPos++;
 			}
+			CurrSelectedPositionIndex = CurrParkedCars[nOccupiedPos];				//Store the corresponding index of log data
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 70,
 				L"Car Number: %s", LogFile->FileContent.LogData[CurrParkedCars[nOccupiedPos]].CarNumber);
 			
@@ -613,6 +623,8 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 				L"Hours Parked (Until Now): %i", HourDifference);
 		}
 		else {																	//Position unoccupied
+			CurrSelectedPositionIndex = -1;											//Mark that there's no corresponding index of log data
+			ToolTip->SetToolTip(PositionReportCanvas->hWnd, L"");					//Update tooltip
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 30,
 				L"Parking Position #%i:", PrevPos + 1);
 			PositionReportCanvas->Print(PositionAreaWidth + 45, 50,
@@ -740,6 +752,7 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 
 	if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
 		if (PrevPos != -1) {													//If the cursor is in the position area previously
+			ToolTip->SetToolTip(HistoryReportCanvas->hWnd, L"");					//Update tooltip
 			PrevPos = -1;
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Occupied Positions: %i/100", HistoryParkedCarsCount);				//Show number of occupied positions
@@ -751,7 +764,10 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 
 	if (SelPosX + SelPosY * 10 != PrevPos) {								//If cursor moved from one position to another
 		PrevPos = SelPosX + SelPosY * 10;										//Remember the current position
+		CurrSelectedHistoryIndex = PrevPos;										//Store the current selected position
 		if (HistoryParkedCars[PrevPos].EnterTime.wYear) {						//Position occupied
+			ToolTip->SetToolTip(HistoryReportCanvas->hWnd,
+				L"Double click to view car info");									//Update tooltip
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Parking Position #%i:", PrevPos + 1);
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 140,
@@ -787,6 +803,7 @@ void HistoryReportCanvas_MouseMove(int X, int Y) {
 			}
 		}
 		else {																	//Position unoccupied
+			ToolTip->SetToolTip(HistoryReportCanvas->hWnd, L"");					//Update tooltip
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 120,
 				L"Parking Position #%i:", PrevPos + 1);
 			HistoryReportCanvas->Print(HistoryAreaWidth + 45, 140,
@@ -985,8 +1002,10 @@ void DailyReportCanvas_MouseMove(int X, int Y) {
 
 		if (PrevMinSpaceIndex == MinSpaceIndex)										//If the index remains unchanged, don't paint to reduce CPU usage
 			return;
-		else
+		else {
 			PrevMinSpaceIndex = MinSpaceIndex;											//Otherwise record the new selected index
+			CurrSelectedHourSec = DailyGraphDataPoints[MinSpaceIndex].Hour * 3600;
+		}
 
 		//Draw dash lines to X axis and Y axis
 		DailyReportCanvas->SetPenProps(1, 0, PS_DASH);
@@ -1211,8 +1230,10 @@ void MonthlyReportCanvas_MouseMove(int X, int Y) {
 
 	if (PrevMinSpaceIndex == MinSpaceIndex)										//If the index remains unchanged, don't paint to reduce CPU usage
 		return;
-	else
+	else {
 		PrevMinSpaceIndex = MinSpaceIndex;											//Otherwise record the new selected index
+		CurrSelectedDay = MinSpaceIndex + 1;										//Update the selected date
+	}
 
 	//Draw dash lines to X axis and Y axis
 	MonthlyReportCanvas->SetPenProps(1, 0, PS_DASH);
@@ -1344,6 +1365,78 @@ void tabReport_TabSelected() {
 }
 
 /*
+Description:	To handle double click event of monthly report canvas
+*/
+void MonthlyReportCanvas_DoubleClick() {
+	SYSTEMTIME	stSelectedDate;												//Selected date of the monthly report
+
+	dtpMonthlyDate->GetTime(&stSelectedDate);								//Get selected date
+	stSelectedDate.wDay = CurrSelectedDay;									//Specify the day is the selected date
+	tabReport->SetSel(2);													//Select daily report tab
+	tabReport_TabSelected();												//Invoke tab selected event to show canvas
+	dtpDailyDate->SetTime(&stSelectedDate);									//Set daily report time
+	dtpDailyDate_DateTimeChanged();											//Apply the changed time
+}
+
+/*
+Description:	To handle double click event of daily report canvas
+*/
+void DailyReportCanvas_DoubleClick() {
+	SYSTEMTIME	stSelectedDate;												//Selected date of the daily report
+
+	CurrSelectedHourSec = CurrSelectedHourSec;								//Convert hour value into seconds
+	dtpDailyDate->GetTime(&stSelectedDate);									//Get selected date
+	stSelectedDate.wHour = CurrSelectedHourSec / 3600;						//Get corresponding time of selected data point
+	stSelectedDate.wMinute = CurrSelectedHourSec % 3600 / 60;
+	stSelectedDate.wSecond = 0;												//Ignore second
+	tabReport->SetSel(1);													//Select history report tab
+	tabReport_TabSelected();												//Invoke tab selected event to show canvas
+	dtpHistoryDate->SetTime(&stSelectedDate);								//Specify the date is the selected date
+	dtpHistoryTime->SetTime(&stSelectedDate);
+	dtpHistoryDate_DateTimeChanged();										//Apply the changed time
+}
+
+/*
+Description:	To handle double click event of position report canvas
+*/
+void PositionReportCanvas_DoubleClick() {
+	if (CurrSelectedPositionIndex != -1) {									//If the position is occupied
+		LVITEM	SelItem;													//List view item info
+
+		mnuLog_Click();														//Show log
+		SelItem.stateMask = LVIS_SELECTED;									//Make state of the list view item be selected
+		SelItem.state = LVIS_SELECTED;
+		SendMessage(lvLog->hWnd, LVM_SETITEMSTATE,
+			CurrSelectedPositionIndex, (LPARAM)&SelItem);					//Select the corresponding list item
+		SendMessage(lvLog->hWnd, LVM_ENSUREVISIBLE,
+			CurrSelectedPositionIndex, FALSE);								//Scroll the selected item into view
+		SetFocus(lvLog->hWnd);												//Make the list view has focus
+	}
+}
+
+/*
+Description:	To handle double click event of history report canvas
+*/
+void HistoryReportCanvas_DoubleClick() {
+	if (HistoryParkedCars[CurrSelectedHistoryIndex].EnterTime.wYear) {		//If the position is occupied
+		for (int i = 0; i < LogFile->FileContent.ElementCount; i++) {			//Search for the corresponding record
+			//The memory matches means two records are corresponding
+			if (!memcmp(&(LogFile->FileContent.LogData[i]), &HistoryParkedCars[CurrSelectedHistoryIndex], sizeof(LogInfo))) {
+				LVITEM	SelItem;													//List view item info
+
+				mnuLog_Click();														//Show log
+				SelItem.stateMask = LVIS_SELECTED;									//Make state of the list view item be selected
+				SelItem.state = LVIS_SELECTED;
+				SendMessage(lvLog->hWnd, LVM_SETITEMSTATE, i, (LPARAM)&SelItem);	//Select the corresponding list item
+				SendMessage(lvLog->hWnd, LVM_ENSUREVISIBLE, i, FALSE);				//Scroll the selected item into view
+				SetFocus(lvLog->hWnd);												//Make the list view has focus
+				return;
+			}
+		}
+	}
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create(HWND hWnd) {
@@ -1362,10 +1455,14 @@ void MainWindow_Create(HWND hWnd) {
 	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
 	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, tabReport_TabSelected);
-	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, PositionReportCanvas_Paint, PositionReportCanvas_MouseMove);
-	HistoryReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, HistoryReportCanvas_Paint, HistoryReportCanvas_MouseMove);
-	DailyReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, DailyReportCanvas_Paint, DailyReportCanvas_MouseMove);
-	MonthlyReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff, MonthlyReportCanvas_Paint, MonthlyReportCanvas_MouseMove);
+	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff,
+		PositionReportCanvas_Paint, PositionReportCanvas_MouseMove, PositionReportCanvas_DoubleClick);
+	HistoryReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff,
+		HistoryReportCanvas_Paint, HistoryReportCanvas_MouseMove, HistoryReportCanvas_DoubleClick);
+	DailyReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff,
+		DailyReportCanvas_Paint, DailyReportCanvas_MouseMove, DailyReportCanvas_DoubleClick);
+	MonthlyReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff,
+		MonthlyReportCanvas_Paint, MonthlyReportCanvas_MouseMove, MonthlyReportCanvas_DoubleClick);
 	labPasswordIcon = make_shared<IceLabel>(hWnd, IDC_PASSWORDICON);
 	labPassword = make_shared<IceLabel>(hWnd, IDC_PASSWORDLABEL);
 	labWelcome = make_shared<IceLabel>(hWnd, IDC_WELCOMELABEL);
@@ -1432,6 +1529,16 @@ void MainWindow_Create(HWND hWnd) {
 	DailyReportCanvas->SetVisible(false);
 	MonthlyReportCanvas->Move(0, TabHeaderHeight);
 	MonthlyReportCanvas->SetVisible(false);
+
+	//Set tooltip for controls
+	ToolTip = make_shared<IceToolTip>();
+	ToolTip->SetToolTip(dtpHistoryDate->hWnd, L"Set history report date");
+	ToolTip->SetToolTip(dtpHistoryTime->hWnd, L"Set time of the day");
+	ToolTip->SetToolTip(sliHistoryTime->hWnd, L"Drag to change time");
+	ToolTip->SetToolTip(dtpDailyDate->hWnd, L"Set report date");
+	ToolTip->SetToolTip(dtpMonthlyDate->hWnd, L"Set report month");
+	ToolTip->SetToolTip(DailyReportCanvas->hWnd, L"Double click to view detailed hourly position info");
+	ToolTip->SetToolTip(MonthlyReportCanvas->hWnd, L"Double click to view detailed daily report of the day");
 
 	//Load data file
 	LogFile = make_shared<IceEncryptedFile>(L"Log.dat");

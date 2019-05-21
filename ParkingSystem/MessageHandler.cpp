@@ -72,6 +72,40 @@ void CALLBACK IceTimer::TimerProc(HWND hWnd, UINT uMsg, UINT_PTR idTimer, DWORD 
 
 //============================================================================
 /*
+Description:    Constructor of tooltip class
+*/
+IceToolTip::IceToolTip() {
+	//Create a tooltip window
+	hWndToolTip = CreateWindowEx(0, L"tooltips_class32", L"", WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, 0, GetProgramInstance(), 0);
+}
+
+/*
+Description:    Destructor of tooltip class
+*/
+IceToolTip::~IceToolTip() {
+	//Destroy the tooltip window
+	DestroyWindow(hWndToolTip);
+}
+
+/*
+Description:	Set tooltip for a control
+Args:			hWndTargetCtl: Handle to the target control
+				ToolTip: Tooltip string
+*/
+void IceToolTip::SetToolTip(HWND hWndTargetCtl, wchar_t *ToolTipText) {
+	TTTOOLINFO	ti = { 0 };																		//Tooltip info
+
+	ti.cbSize = sizeof(ti);
+	ti.hwnd = hWndTargetCtl;																	//Set target control handle
+	ti.uFlags = TTF_IDISHWND | TTF_SUBCLASS;													//Set tooltip style
+	ti.uId = (UINT_PTR)hWndTargetCtl;
+	ti.lpszText = ToolTipText;																	//Set tooltip text
+	SendMessage(hWndToolTip, TTM_ADDTOOL, 0, (LPARAM)&ti);										//Bind tooltip with control
+}
+
+//============================================================================
+/*
 Description:    Set the visiblility of the control
 Args:           Visible: New visibility status
 */
@@ -322,10 +356,11 @@ Args:           ParentHwnd: The parent window of the canvas
 				BackColor: Background color of the canvas. Default is 0xffffff (white)
 */
 IceCanvas::IceCanvas(HWND ParentHwnd, COLORREF BackColor,
-	VOID_EVENT PaintEvent, MOUSEMOVE_EVENT MouseMoveEvent) {
+	VOID_EVENT PaintEvent, MOUSEMOVE_EVENT MouseMoveEvent, VOID_EVENT DblClickEvent) {
 	ColorBrush = CreateSolidBrush(BackColor);														//Create background brush
 	PaintEventFunction = PaintEvent;																//Record event functions
 	MouseMoveEventFunction = MouseMoveEvent;
+	DblClickEventFunction = DblClickEvent;
 	hWnd = CreateWindowEx(0, L"#32770", L"Canvas", WS_VISIBLE | WS_CHILD,
 		0, 0, 100, 100, ParentHwnd, (HMENU)NULL, GetProgramInstance(), NULL);
 	GetWindowRect(hWnd, &CtlRect);
@@ -393,27 +428,14 @@ LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 	IceCanvas*	ThisCanvas = (IceCanvas*)GetProp(hWnd, L"Object");									//Retrieve a pointer to this class
 
 	switch (uMsg) {
-	case WM_SIZE:
-		//Remember current DC handle & bitmap handle
-		HDC			PrevHDC;
-		HBITMAP		PrevBmp;
-
-		PrevHDC = ThisCanvas->hDC;
-		PrevBmp = ThisCanvas->hBmp;
-
+	case WM_SIZE:																//Window resizing
 		//Re-create memory DC & bitmap with the new size
 		int Width, Height;
 
 		Width = LOWORD(lParam);
 		Height = HIWORD(lParam);
 		ThisCanvas->CreateMemoryDC(Width, Height);
-
-		//Paint image from previous memory DC to the new memory DC
-		BitBlt(ThisCanvas->hDC, 0, 0, Width, Height, PrevHDC, 0, 0, SRCCOPY);
-
-		//Delete previous memory DC & bitmap
-		DeleteDC(PrevHDC);
-		DeleteObject(PrevBmp);
+		InvalidateRect(ThisCanvas->hWnd, NULL, TRUE);
 
 		//Invoke paint event
 		if (ThisCanvas->PaintEventFunction)
@@ -421,7 +443,7 @@ LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 		break;
 
-	case WM_ERASEBKGND:
+	case WM_ERASEBKGND:															//Window redraw
 		//Paint contents from memory DC
 		//Note that for this message, wParam is hDC of the window
 		BitBlt((HDC)wParam, 0, 0,
@@ -429,12 +451,16 @@ LRESULT CALLBACK IceCanvas::CanvasWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 			ThisCanvas->bi.bmiHeader.biHeight,
 			ThisCanvas->hDC, 0, 0, SRCCOPY);
 
-		//Invoke paint event
-		if (ThisCanvas->PaintEventFunction)
+		if (ThisCanvas->PaintEventFunction)											//Invoke paint event
 			ThisCanvas->PaintEventFunction();
 		return 0;
 
-	case WM_MOUSEMOVE:
+	case WM_LBUTTONDBLCLK:														//Left button double clicked
+		if (ThisCanvas->DblClickEventFunction)										//Invoke double click event
+			ThisCanvas->DblClickEventFunction();
+		break;
+
+	case WM_MOUSEMOVE:															//Mouse move
 		if (ThisCanvas->MouseMoveEventFunction)
 			ThisCanvas->MouseMoveEventFunction(LOWORD(lParam), HIWORD(lParam)); 
 		return 0;
