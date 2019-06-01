@@ -948,8 +948,8 @@ LRESULT CALLBACK SettingsWindowEditBoxWndProc(HWND hWnd, UINT uMsg, WPARAM wPara
 	EDIT_PROC_DEFAULT_OPERATION
 
 	if (uMsg == WM_CHAR) {													//Key pressed message
-		Editbox_KeyPressed(wParam, (int)GetMenu(hWnd));							//Handle the pressed key
-		return 0;
+		if (Editbox_KeyPressed(wParam, (int)GetMenu(hWnd)))							//Handle the pressed key
+			return 0;
 	}
 
 	//Call the default window prodecure of the editbpx

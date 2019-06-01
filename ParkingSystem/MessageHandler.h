@@ -45,7 +45,7 @@ void btnEnterOrExit_Click();					//Car enter/exit button click
 
 /* Settings window events */
 void SettingsWindow_Create(HWND);				//Settings window created
-void Editbox_KeyPressed(int Key, int hMenu);	//Key pressed event of textboxes in settings window
+bool Editbox_KeyPressed(int Key, int hMenu);	//Key pressed event of textboxes in settings window
 
 /* Event types */
 typedef void(*VOID_EVENT)();					//For void ***() events

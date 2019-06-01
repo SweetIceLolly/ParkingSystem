@@ -86,8 +86,9 @@ void cmdOK_Click() {
 Description:	To handle key pressed event for textboxes
 Args:			Key: Ascii code of the pressed key
 				hMenu: Identifier of textboxes
+Return:			true if the key should be ignored, false otherwise
 */
-void Editbox_KeyPressed(int Key, int hMenu) {
+bool Editbox_KeyPressed(int Key, int hMenu) {
 	if (Key == VK_RETURN) {													//Enter key pressed
 		switch (hMenu) {														//Control menu ID
 		case IDC_CURRENTPASSWORDEDIT:												//Current password edit
@@ -109,10 +110,14 @@ void Editbox_KeyPressed(int Key, int hMenu) {
 			cmdOK_Click();
 			break;
 		}
+		return true;
 	}
 	else if (Key == VK_ESCAPE) {											//Escape key pressed
 		cmdCancel_Click();														//Close the window
+		return true;
 	}
+	else																	//Don't ignore this key
+		return false;
 }
 
 /*
