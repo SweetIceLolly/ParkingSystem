@@ -1898,6 +1898,7 @@ Description:	To handle Enter Payment Mode menu event
 void mnuEnterPaymentMode_Click() {
 	lvLog->SetVisible(false);												//Hide unrelated controls
 	tabReport->SetVisible(false);
+	ShowSearchFrame(false);
 	ShowPaymentFrame();
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	SetFocus(edCarNumber->hWnd);											//Set input focus to the car number textbox
