@@ -78,6 +78,7 @@ IceToolTip::IceToolTip() {
 	//Create a tooltip window
 	hWndToolTip = CreateWindowEx(0, L"tooltips_class32", L"", WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, 0, GetProgramInstance(), 0);
+	SendMessage(hWndToolTip, TTM_SETMAXTIPWIDTH, 0, 1000);
 }
 
 /*
@@ -195,6 +196,63 @@ Args:           Caption: New caption
 */
 void IceButton::SetCaption(wchar_t *Caption) {
 	SetWindowText(hWnd, Caption);
+}
+
+//============================================================================
+/*
+Description:	Constructor of the checkbox control
+Args:           ParentHwnd: The parent window of the control
+				CtlID: Control ID, usually defined in resource.h
+				Event: CheckBox_Click() handler for the button
+*/
+IceCheckBox::IceCheckBox(HWND ParentHwnd, int CtlID, VOID_EVENT Event) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
+	SetProp(hWnd, L"ClickEvent", (HANDLE)Event);
+}
+
+/*
+Description:    Get checked state of the checkbox control
+Return:			true if the chekbox is checked, false otherwise
+*/
+bool IceCheckBox::GetChecked() {
+	return (SendMessage(hWnd, BM_GETCHECK, 0, 0) == BST_CHECKED);
+}
+
+//============================================================================
+/*
+Description:	Constructor of the combobox control
+Args:           ParentHwnd: The parent window of the control
+				CtlID: Control ID, usually defined in resource.h
+*/
+IceComboBox::IceComboBox(HWND ParentHwnd, int CtlID) {
+	hWnd = GetDlgItem(ParentHwnd, CtlID);
+	GetWindowRect(hWnd, &CtlRect);
+}
+
+/*
+Description:    Get index of selected item of the combobox control
+Return:			Index of the selected item
+*/
+int IceComboBox::GetSelItem() {
+	return (int)SendMessage(hWnd, CB_GETCURSEL, 0, 0);
+}
+
+/*
+Description:    Set index of selected item of the combobox control
+Args:			Index: Index of the item you want to be selected
+*/
+void IceComboBox::SetSelItem(int Index) {
+	SendMessage(hWnd, CB_SETCURSEL, (WPARAM)Index, 0);
+}
+
+/*
+Description:    Get index of selected item of the combobox control
+Args:			Index: Index of the item you want to be selected
+Return:			Index of the selected item
+*/
+int IceComboBox::AddItem(wchar_t *Text) {
+	return (int)SendMessage(hWnd, CB_INSERTSTRING, -1, (LPARAM)Text);
 }
 
 //============================================================================
@@ -673,7 +731,9 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 		case DTN_DATETIMECHANGE:														//TimePicker changed
 			//Invoke TimePicker_DateTimeChanged()
-			((VOID_EVENT)(GetProp(((NMHDR*)lParam)->hwndFrom, L"ChangedEvent")))();
+			VOID_EVENT lpfnChangedEvent = (VOID_EVENT)GetProp(((NMHDR*)lParam)->hwndFrom, L"ChangedEvent");
+			if (lpfnChangedEvent)
+				lpfnChangedEvent();
 			break;
 		}
 		break;
@@ -685,8 +745,15 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_COMMAND:															//Control commands
 		if (lParam != 0) {															//Notification from a control
-			if (HIWORD(wParam) == BN_CLICKED) {											//Button clicked notification code															/
-				((VOID_EVENT)(GetProp((HWND)lParam, L"ClickEvent")))();						//Invoke Button_Click()
+			switch (HIWORD(wParam)) {
+			case BN_CLICKED:															//Button clicked
+				((VOID_EVENT)(GetProp((HWND)lParam, L"ClickEvent")))();						//Invoke Button_Click() or CheckBox_Click()
+				break;
+
+			case CBN_EDITCHANGE:														//Combobox selection changed
+			case CBN_SELCHANGE:
+				SetFocus(GetDlgItem(hWnd, IDC_SEARCHHOURSEDIT));
+				break;
 			}
 		}
 		else {
@@ -718,6 +785,14 @@ INT_PTR CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 				case ID_STATUS_OPTIONS:															//System options
 					mnuOptions_Click();
+					break;
+
+				case ID_HELP_HOWTOUSE:															//How to use
+					mnuHowToUse_Click();
+					break;
+
+				case ID_HELP_ABOUT:																//About
+					mnuAbout_Click();
 					break;
 				}
 			}
@@ -819,8 +894,38 @@ LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		else if ((wParam > 'z' || wParam < 'a') &&
 			(wParam > 'Z' || wParam < 'A') &&
 			(wParam > '9' || wParam < '0') &&
-			(wParam != VK_DELETE) &&
-			(wParam != VK_BACK))												//Accept numbers, letters and delete keys only, reject other characters
+			(wParam != VK_DELETE) && (wParam != VK_BACK))						//Accept numbers, letters and delete keys only, reject other characters
+
+			return 0;
+	}
+	else if (uMsg == WM_PASTE)												//Block paste message
+		return 0;
+
+	//Call the default window prodecure of the editbpx
+	return CallWindowProc((WNDPROC)GetProp(hWnd, L"PrevWndProc"), hWnd, uMsg, wParam, lParam);
+}
+
+/*
+Description:    Search car number editbox procedure
+Args:           hWnd: Handle to the window
+				uMsg: Message code
+				wParam, lParam: Extra infos
+Return:         Result of message handling
+*/
+LRESULT CALLBACK SearchCarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	EDIT_PROC_DEFAULT_OPERATION
+
+	if (uMsg == WM_CHAR) {													//Key pressed message
+		if (wParam == VK_RETURN) {												//Enter key
+			GetDlgItem(hwndMainWindow, IDC_SEARCHBUTTON);
+			return 0;
+		}
+		else if ((wParam > 'z' || wParam < 'a') &&
+			(wParam > 'Z' || wParam < 'A') &&
+			(wParam > '9' || wParam < '0') &&
+			(wParam != VK_DELETE) && (wParam != VK_BACK) &&
+			(wParam != '#') && (wParam != '@') &&
+			(wParam != '*') && (wParam != '?'))									//Only accept numbers, letters, delete keys, #, @, *, ?
 
 			return 0;
 	}

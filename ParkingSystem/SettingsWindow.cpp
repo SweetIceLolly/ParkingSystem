@@ -40,7 +40,7 @@ void cmdOK_Click() {
 			edConfirmPassword->GetText(ConfirmPasswordBuffer);
 			if (lstrlenW(PasswordBuffer) <= 0) {											//The user didn't enter a new password
 				MessageBox(SettingsWindowHandle, L"You must enter a new password!",
-					L"Failed to Change Password", MB_OK | MB_ICONEXCLAMATION);
+					L"Failed to Change Password", MB_ICONEXCLAMATION);
 				SetFocus(edNewPassword->hWnd);
 				return;
 			}
@@ -49,7 +49,7 @@ void cmdOK_Click() {
 			}
 			else {
 				MessageBox(SettingsWindowHandle, L"New password and confirm password are not the same!",
-					L"Failed to Change Password", MB_OK | MB_ICONEXCLAMATION);
+					L"Failed to Change Password", MB_ICONEXCLAMATION);
 				SendMessage(edNewPassword->hWnd, EM_SETSEL, 0, -1);								//Select all text in the textbox
 				SetFocus(edNewPassword->hWnd);
 				return;
@@ -57,7 +57,7 @@ void cmdOK_Click() {
 		}
 		else {																			//Password unmatch
 			MessageBox(SettingsWindowHandle, L"Incorrect password! Settings are not saved.",
-				L"Failed to Change Password", MB_OK | MB_ICONEXCLAMATION);
+				L"Failed to Change Password", MB_ICONEXCLAMATION);
 			SendMessage(edCurrPassword->hWnd, EM_SETSEL, 0, -1);							//Select all text in the textbox
 			SetFocus(edCurrPassword->hWnd);
 			return;
@@ -70,14 +70,14 @@ void cmdOK_Click() {
 	}
 	else {																			//Value is invalid
 		MessageBox(SettingsWindowHandle, L"Invalid fee value! Please enter again.",
-			L"Failed to Change Fee", MB_OK | MB_ICONEXCLAMATION);
+			L"Failed to Change Fee", MB_ICONEXCLAMATION);
 		SendMessage(edFeePerHour->hWnd, EM_SETSEL, 0, -1);								//Select all text in the textbox
 		SetFocus(edFeePerHour->hWnd);
 		return;
 	}
 	if (!LogFile->SaveFile()) {														//Save data file
 		MessageBox(SettingsWindowHandle, L"Settings applied, but failed saving settings to \"Log.dat\"! Please check if the file can be accessed.",
-			L"Failed to Save Settings", MB_OK | MB_ICONERROR);
+			L"Failed to Save Settings", MB_ICONERROR);
 	}
 	cmdCancel_Click();																//Close the window
 }

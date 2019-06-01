@@ -22,6 +22,7 @@ INT_PTR CALLBACK SettingsWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 LRESULT CALLBACK ButtonProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);							//Button control procedure
 LRESULT CALLBACK PasswordEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);						//Password editbox control procedure
 LRESULT CALLBACK CarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);						//Car number editbox control procedure
+LRESULT CALLBACK SearchCarNumberEditProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);				//Search car number editbox control procedure
 LRESULT CALLBACK SettingsWindowEditBoxWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);			//Window procedure for editbox controls in settings window
 
 /* Main window menu events */
@@ -114,6 +115,22 @@ class IceButton : public BasicCtl {
 public:
 	IceButton(HWND ParentHwnd, int CtlID, VOID_EVENT Event);
 	void SetCaption(wchar_t *Caption);
+};
+
+/* Description:		Checkbox class */
+class IceCheckBox : public BasicCtl {
+public:
+	IceCheckBox(HWND ParentHwnd, int CtlID, VOID_EVENT Event);
+	bool GetChecked();
+};
+
+/* Description:		Combobox class */
+class IceComboBox : public BasicCtl {
+public:
+	IceComboBox(HWND ParentHwnd, int CtlID);
+	int GetSelItem();
+	void SetSelItem(int Index);
+	int AddItem(wchar_t *Text);
 };
 
 /* Description:		Edit box class */

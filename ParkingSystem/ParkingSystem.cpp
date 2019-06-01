@@ -13,6 +13,7 @@ const int						GRAPH_ARROW_SIZE = 8;						//Axis arrow size
 
 /* ListView sorting info to be passed to ListViewCompareFunction */
 struct lvSortInfo {
+	HWND						hwndListView;								//The target listview to perform sorting
 	bool						Ascending;									//Ascending or descending
 	int							HeaderIndex;								//Header index of ListView
 };
@@ -45,39 +46,26 @@ inline UINT ToSecond(SYSTEMTIME st) {
 
 /* Overload >= and > operator for comparing date easier */
 /* I don't need other comparison operators so I don't overload them (#^.^#) */
-bool operator>=(SYSTEMTIME st1, SYSTEMTIME st2) {
+inline bool operator>=(SYSTEMTIME st1, SYSTEMTIME st2) {
 	return ToSecond(st1) >= ToSecond(st2);
 }
 
-bool operator>(SYSTEMTIME st1, SYSTEMTIME st2) {
+inline bool operator>(SYSTEMTIME st1, SYSTEMTIME st2) {
 	return ToSecond(st1) > ToSecond(st2);
 }
 
 /* Control bindings */
 shared_ptr<IceEncryptedFile>	LogFile;
 shared_ptr<IceToolTip>			ToolTip;
-shared_ptr<IceEdit>				edPassword;
-shared_ptr<IceButton>			btnLogin;
-shared_ptr<IceButton>			btnCancelLogin;
-shared_ptr<IceListView>			lvLog;
+shared_ptr<IceEdit>				edPassword, edSearchCarNumber, edCarNumber, edSearchHours;
+shared_ptr<IceButton>			btnLogin, btnCancelLogin, btnEnterOrExit, btnSearch;
+shared_ptr<IceListView>			lvLog, lvSearch;
+shared_ptr<IceCheckBox>			chkSearchCarNumber, chkSearchAfterDate, chkSearchBeforeDate, chkSearchHours;
+shared_ptr<IceComboBox>			comSearchCompare;
 shared_ptr<IceTab>				tabReport;
-shared_ptr<IceCanvas>			PositionReportCanvas;
-shared_ptr<IceCanvas>			HistoryReportCanvas;
-shared_ptr<IceCanvas>			DailyReportCanvas;
-shared_ptr<IceCanvas>			MonthlyReportCanvas;
-shared_ptr<IceLabel>			labPasswordIcon;
-shared_ptr<IceLabel>			labPassword;
-shared_ptr<IceLabel>			labWelcome;
-shared_ptr<IceLabel>			labPositionLeft;
-shared_ptr<IceLabel>			labCarNumber;
-shared_ptr<IceLabel>			labPrice;
-shared_ptr<IceLabel>			labTime;
-shared_ptr<IceEdit>				edCarNumber;
-shared_ptr<IceButton>			btnEnterOrExit;
-shared_ptr<IceDateTimePicker>	dtpHistoryDate;
-shared_ptr<IceDateTimePicker>	dtpHistoryTime;
-shared_ptr<IceDateTimePicker>	dtpDailyDate;
-shared_ptr<IceDateTimePicker>	dtpMonthlyDate;
+shared_ptr<IceCanvas>			PositionReportCanvas, HistoryReportCanvas, DailyReportCanvas, MonthlyReportCanvas;
+shared_ptr<IceLabel>			labPasswordIcon, labPassword, labWelcome, labPositionLeft, labCarNumber, labPrice, labTime;
+shared_ptr<IceDateTimePicker>	dtpHistoryDate, dtpHistoryTime, dtpDailyDate, dtpMonthlyDate, dtpSearchAfterDate, dtpSearchBeforeDate;
 shared_ptr<IceSlider>			sliHistoryTime;
 shared_ptr<IceTimer>			tmrRefreshTime;								//The timer refreshs system time of payment mode
 shared_ptr<IceTimer>			tmrRestoreWelcomeText;						//The timer resets welcome text of payment mode after certain seconds
@@ -121,6 +109,7 @@ Value		Name				Description
 6			History Report		Viewing history Report
 7			Daily Report		Viewing	daily Report
 8			Monthly Report		Viewing	monthly Report
+9			Search mode			Using search
 */
 char							CurrStatus = 0;
 
@@ -129,67 +118,67 @@ char							nPasswordTried = 2;							//Password attempt times left
 int								TabHeaderHeight;							//Height of tab header
 
 /*
-Description:    Hide password-related controls
+Description:    Show or hide password-related controls
+Args:			bShow: Show or hide
 */
-void HidePasswordFrame() {
-	btnLogin->SetVisible(false);
-	btnCancelLogin->SetVisible(false);
-	edPassword->SetVisible(false);
-	labPasswordIcon->SetVisible(false);
-	labPassword->SetVisible(false);
-	ShowWindow(fraPasswordFrame, SW_HIDE);
+void ShowPasswordFrame(bool bShow = true) {
+	btnLogin->SetVisible(bShow);
+	btnCancelLogin->SetVisible(bShow);
+	edPassword->SetVisible(bShow);
+	labPasswordIcon->SetVisible(bShow);
+	labPassword->SetVisible(bShow);
+	ShowWindow(fraPasswordFrame, bShow ? SW_SHOW : SW_HIDE);
+
+	if (bShow) {
+		nPasswordTried = 2;														//Restore password attempt times
+		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window not sizable
+			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX);
+	}
+	else {
+		//Restore password field and prompt text
+		edPassword->SetText(L"");
+		labPassword->SetText(L"Enter system password:\n(Default: 123)");
+
+		SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window sizable
+			GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
+	}
+	InvalidateRect(GetMainWindowHandle(), NULL, TRUE);
+}
+
+/*
+Description:    Show or hide payment-related controls
+Args:			bShow: Show or hide
+*/
+void ShowPaymentFrame(bool bShow = true) {
 	
-	//Restore password field and prompt text
-	edPassword->SetText(L"");
-	labPassword->SetText(L"Enter system password:\n(Default: 123)");
+	labWelcome->SetVisible(bShow);
+	labPositionLeft->SetVisible(bShow);
+	labCarNumber->SetVisible(bShow);
+	labPrice->SetVisible(bShow);
+	labTime->SetVisible(bShow);
+	edCarNumber->SetVisible(bShow);
+	btnEnterOrExit->SetVisible(bShow);
 
-	SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window sizable
-		GetWindowLong(GetMainWindowHandle(), GWL_STYLE) | WS_THICKFRAME | WS_MAXIMIZEBOX);
-	InvalidateRect(GetMainWindowHandle(), NULL, TRUE);
+	if (bShow)
+		labPrice->SetText(L"Price: $%.2f/hr, 20%% off if exceed 5 hrs", LogFile->FileContent.FeePerHour);		//Update price
 }
 
 /*
-Description:    Show password-related controls
+Description:	Show or hide search-related controls
+Args:			bShow: Show or hide
 */
-void ShowPasswordFrame() {
-	nPasswordTried = 2;														//Restore password attempt times
-	btnLogin->SetVisible(true);
-	btnCancelLogin->SetVisible(true);
-	edPassword->SetVisible(true);
-	labPasswordIcon->SetVisible(true);
-	labPassword->SetVisible(true);
-	ShowWindow(fraPasswordFrame, SW_SHOW);
-
-	SetWindowLong(GetMainWindowHandle(), GWL_STYLE,							//Make the window not sizable
-		GetWindowLong(GetMainWindowHandle(), GWL_STYLE) & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX);
-	InvalidateRect(GetMainWindowHandle(), NULL, TRUE);
-}
-
-/*
-Description:    Hide payment-related controls
-*/
-void HidePaymentFrame() {
-	labWelcome->SetVisible(false);
-	labPositionLeft->SetVisible(false);
-	labCarNumber->SetVisible(false);
-	labPrice->SetVisible(false);
-	labTime->SetVisible(false);
-	edCarNumber->SetVisible(false);
-	btnEnterOrExit->SetVisible(false);
-}
-
-/*
-Description:    Show payment-related controls
-*/
-void ShowPaymentFrame() {
-	labPrice->SetText(L"Price: $%.2f/hr, 20%% off if exceed 5 hrs", LogFile->FileContent.FeePerHour);		//Update price
-	labWelcome->SetVisible(true);
-	labPositionLeft->SetVisible(true);
-	labCarNumber->SetVisible(true);
-	labPrice->SetVisible(true);
-	labTime->SetVisible(true);
-	edCarNumber->SetVisible(true);
-	btnEnterOrExit->SetVisible(true);
+void ShowSearchFrame(bool bShow = true) {
+	edSearchCarNumber->SetVisible(bShow);
+	edSearchHours->SetVisible(bShow);
+	btnSearch->SetVisible(bShow);
+	lvSearch->SetVisible(bShow);
+	chkSearchCarNumber->SetVisible(bShow);
+	chkSearchAfterDate->SetVisible(bShow);
+	chkSearchBeforeDate->SetVisible(bShow);
+	chkSearchHours->SetVisible(bShow);
+	comSearchCompare->SetVisible(bShow);
+	dtpSearchAfterDate->SetVisible(bShow);
+	dtpSearchBeforeDate->SetVisible(bShow);
 }
 
 /*
@@ -267,6 +256,9 @@ void MainWindow_Resize(int Width, int Height) {
 		MonthlyReportCanvas->Size(Width, Height - TabHeaderHeight);				//Adjust monthly report canvas size
 		dtpMonthlyDate->Move(Width - 130, 25);									//Adjust date time picker control position
 	}
+	if (CurrStatus == 9 || CurrStatus == 0) {								//Seach mode
+		lvSearch->Size(Width, Height - 60);
+	}
 }
 
 /*
@@ -279,7 +271,7 @@ void btnLogin_Click() {
 	edPassword->GetText(Password);
 	if (CurrStatus == 0) {													//Login to enter system
 		if (LogFile->ReadFile(Password) || LogFile->WithoutFile) {				//Password correct
-			HidePasswordFrame();
+			ShowPasswordFrame(false);
 
 			//Show the main menu
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
@@ -303,7 +295,7 @@ void btnLogin_Click() {
 
 			//If this is a new log file, ask user to modify the password
 			if (LogFile->CreatedNewFile) {
-				MessageBox(GetMainWindowHandle(), L"You should modify the password.", L"Prompt", MB_OK | MB_ICONINFORMATION);
+				MessageBox(GetMainWindowHandle(), L"You should modify the password.", L"Prompt", MB_ICONINFORMATION);
 				mnuOptions_Click();
 			}
 		}
@@ -327,7 +319,7 @@ void btnLogin_Click() {
 	}
 	else if (CurrStatus == 3) {												//Login to exit payment mode
 		if (!lstrcmpW(Password, LogFile->FileContent.Password)) {				//Password correct
-			HidePasswordFrame();
+			ShowPasswordFrame(false);
 
 			//Show the main menu
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
@@ -342,7 +334,7 @@ void btnLogin_Click() {
 				SetFocus(edPassword->hWnd);
 			}
 			else {
-				HidePasswordFrame();
+				ShowPasswordFrame(false);
 				ShowPaymentFrame();
 
 				//Show login failed message
@@ -355,7 +347,7 @@ void btnLogin_Click() {
 	}
 	else if (CurrStatus == 4) {												//Login to unlock the system
 		if (!lstrcmpW(Password, LogFile->FileContent.Password)) {				//Password correct
-			HidePasswordFrame();
+			ShowPasswordFrame(false);
 
 			//Show the main menu
 			HMENU hMenu = LoadMenu(GetProgramInstance(), MAKEINTRESOURCE(IDR_MAINWINDOW_MENU));
@@ -575,7 +567,7 @@ void PositionReportCanvas_MouseMove(int X, int Y) {
 	//Calculate the car position under the cursor
 	int SelPosX = (X - 30) / BoxW;
 	int SelPosY = (Y - 30) / BoxH;
-	static int PrevPos = -2;												//Remember the previous selected car position to reduce CPU usage
+	static int PrevPos = -1;												//Remember the previous selected car position to reduce CPU usage
 
 	if (SelPosX > 9 || SelPosY > 9 || X < 30 || Y < 30) {					//If cursor moved out of the position area
 		if (PrevPos != -1) {													//If the cursor is in the position area previously
@@ -1272,8 +1264,8 @@ int CALLBACK ListViewCompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	lvi1.iSubItem = lvi2.iSubItem = ((lvSortInfo*)lParamSort)->HeaderIndex;	//Set sub item index
 	lvi1.pszText = buf1;													//Set buffer address
 	lvi2.pszText = buf2;
-	SendMessage(lvLog->hWnd, LVM_GETITEMTEXT, lParam1, (LPARAM)&lvi1);
-	SendMessage(lvLog->hWnd, LVM_GETITEMTEXT, lParam2, (LPARAM)&lvi2);
+	SendMessage(((lvSortInfo*)lParamSort)->hwndListView, LVM_GETITEMTEXT, lParam1, (LPARAM)&lvi1);
+	SendMessage(((lvSortInfo*)lParamSort)->hwndListView, LVM_GETITEMTEXT, lParam2, (LPARAM)&lvi2);
 
 	//Return value depends on sorting direction
 	if (((lvSortInfo*)lParamSort)->HeaderIndex == 0 ||
@@ -1305,8 +1297,19 @@ void lvLog_HeaderClicked(int Index) {
 	static bool Ascending[5] = { true, true, true, true, true };			//Ascending or descending (initial = ascending)
 
 	Ascending[Index] = !Ascending[Index];									//Reverse sorting direction
-	lvSortInfo	si = { Ascending[Index], Index };							//Set sorting info
+	lvSortInfo	si = { lvLog->hWnd, Ascending[Index], Index };					//Set sorting info
 	SendMessage(lvLog->hWnd, LVM_SORTITEMSEX, (WPARAM)&si, (LPARAM)ListViewCompareFunction);
+}
+
+/*
+Description:	To handle search listview header clicked event
+*/
+void lvSearch_HeaderClicked(int Index) {
+	static bool Ascending[5] = { true, true, true, true, true };			//Ascending or descending (initial = ascending)
+
+	Ascending[Index] = !Ascending[Index];									//Reverse sorting direction
+	lvSortInfo	si = { lvSearch->hWnd, Ascending[Index], Index };				//Set sorting info
+	SendMessage(lvSearch->hWnd, LVM_SORTITEMSEX, (WPARAM)&si, (LPARAM)ListViewCompareFunction);
 }
 
 /*
@@ -1437,6 +1440,256 @@ void HistoryReportCanvas_DoubleClick() {
 }
 
 /*
+Description:	To begin searching log with specified criteria
+*/
+void btnSearch_Click() {
+	//Get selected criteria
+	bool		SearchCarNumber = chkSearchCarNumber->GetChecked();
+	bool		SearchDateBefore = chkSearchBeforeDate->GetChecked();
+	bool		SearchDateAfter = chkSearchAfterDate->GetChecked();
+	bool		SearchHour = chkSearchHours->GetChecked();
+
+	wchar_t		SearchString[15];													//Car number string to search
+	int			SearchParkHours;													//Park hours to compare with
+	char		ParkHourCmpMode = comSearchCompare->GetSelItem();					//Get parking hours comparison mode
+	SYSTEMTIME	stSearchDateAfter, stSearchDateBefore, stCurrDate;					//Dates to compare with
+	bool		Matched;															//If the current log matches search criteria
+
+	//Check for incomplete/invalid info
+	if (!SearchCarNumber && !SearchDateBefore && !SearchDateAfter && !SearchHour) {
+		MessageBox(GetMainWindowHandle(), L"You must select at least one search criterion!", L"Prompt", MB_ICONEXCLAMATION);
+		return;
+	}
+	if (SearchHour) {
+		edSearchHours->GetText(SearchString);
+		SearchParkHours = _wtoi(SearchString);
+		if (SearchParkHours < 0) {														//Check if the value is valid
+			MessageBox(GetMainWindowHandle(), L"Invalid value of parking hours given!", L"Prompt", MB_ICONEXCLAMATION);
+			SetFocus(edSearchHours->hWnd);
+			return;
+		}
+		else {																			//Show the converted hour value
+			_itow_s(SearchParkHours, SearchString, 10);
+			edSearchHours->SetText(SearchString);
+		}
+	}
+	if (SearchCarNumber) {
+		edSearchCarNumber->GetText(SearchString);
+		if (lstrlenW(SearchString) <= 0) {												//Check if a car number is given
+			edSearchCarNumber->SetText(L"*");
+		}
+	}
+	if (SearchDateBefore)
+		dtpSearchBeforeDate->GetTime(&stSearchDateBefore);
+	if (SearchDateAfter)
+		dtpSearchAfterDate->GetTime(&stSearchDateAfter);
+	
+	//Search for items that matches all criteria
+	LogInfo		*lpLogInfo;
+	int			ParkedHours, ItemIndex = 0;
+
+	lvSearch->DeleteAllItems();														//Delete all items in the listview
+	GetLocalTime(&stCurrDate);														//Get current system date
+	for (UINT i = 0; i < LogFile->FileContent.ElementCount; i++) {
+		lpLogInfo = &(LogFile->FileContent.LogData[i]);									//Get a pointer to current log info
+		Matched = true;
+		if (SearchHour) {																//Searching by parking hours
+			//If the car has left, parked hours = LeaveTime - EnterTime;
+			//If the car is still parking, parked hours = CurrentTime - EnterTime
+			//Note that (LeaveTime.wYear == 0) means the car is still parking
+			if (lpLogInfo->LeaveTime.wYear)
+				CalcFee(&lpLogInfo->EnterTime, &lpLogInfo->LeaveTime, &ParkedHours);
+			else
+				CalcFee(&lpLogInfo->EnterTime, &stCurrDate, &ParkedHours);
+
+			switch (ParkHourCmpMode) {														//Check comparison mode
+			case 0:																			//>
+				if (!(ParkedHours > SearchParkHours))
+					Matched = false;
+				break;
+
+			case 1:																			//=
+				if (!(ParkedHours == SearchParkHours))
+					Matched = false;
+				break;
+
+			case 2:																			//<
+				if (!(ParkedHours < SearchParkHours))
+					Matched = false;
+				break;
+			}
+		}
+		if (SearchDateBefore) {															//Search for date before the specified date
+			if (!(stSearchDateBefore > lpLogInfo->EnterTime))
+				Matched = false;
+		}
+		if (SearchDateAfter) {															//Search for date after the specified date
+			if (!(lpLogInfo->EnterTime > stSearchDateAfter))
+				Matched = false;
+		}
+		if (SearchCarNumber) {															//Searching by car numbers
+			/*	Keys:
+				? : A single character (Number/Letter)
+				# : A single number
+				@ : A single letter
+				* : Anything of any length
+			*/
+			int	CompPos = 0;																//Comparison position of car number string
+			for (int j = 0; j < lstrlenW(SearchString); j++, CompPos++) {
+				if (!Matched)
+					break;
+				if (CompPos > lstrlenW(lpLogInfo->CarNumber)) {
+					Matched = false;
+					break;
+				}
+				switch (SearchString[j]) {
+				case '?':																		//Because the character must be a number or a letter, just ignore '?'
+					break;
+
+				case '#':																		//Check if the character is a number
+					if (lpLogInfo->CarNumber[CompPos] < '0' || '9' < lpLogInfo->CarNumber[CompPos])
+						Matched = false;
+					break;
+
+				case '@':																		//Check if the character is a letter
+					if (lpLogInfo->CarNumber[CompPos] < 'A' || 'Z' < lpLogInfo->CarNumber[CompPos])
+						Matched = false;
+					break;
+
+				case '*':																		//Check if the string matches the pattern
+					if (j + 1 < lstrlenW(SearchString)) {											//Get the character after '*'
+						int		k;
+						bool	NextCharacterMatched = false;
+
+						for (k = CompPos + 1; k < lstrlenW(lpLogInfo->CarNumber); k++) {				//Match for next character
+							//CompPos = k : Change CompPos to the matched position of the next character
+							//j++ : Move to the next searching character
+							if (NextCharacterMatched)														//Character matched, exit the loop to match next character
+								break;
+
+							switch (SearchString[j + 1]) {
+							case '?':
+								CompPos = k;
+								j++;
+								NextCharacterMatched = true;
+								break;
+
+							case '#':
+								if (lpLogInfo->CarNumber[k] >= '0' && '9' >= lpLogInfo->CarNumber[k]) {
+									CompPos = k;
+									j++;
+									NextCharacterMatched = true;
+								}
+								break;
+
+							case '@':
+								if (lpLogInfo->CarNumber[k] >= 'A' && 'Z' >= lpLogInfo->CarNumber[k]) {
+									CompPos = k;
+									j++;
+									NextCharacterMatched = true;
+								}
+								break;
+
+							default:
+								if (lpLogInfo->CarNumber[k] == SearchString[j + 1]) {
+									CompPos = k;
+									j++;
+									NextCharacterMatched = true;
+								}
+								break;
+							}
+						}
+						if (k > lstrlenW(lpLogInfo->CarNumber))											//Failed to match next character
+							Matched = false;
+					}
+					break;
+
+				default:																		//Check if the character is the same
+					if (lpLogInfo->CarNumber[CompPos] != SearchString[j])
+						Matched = false;
+					break;
+				}
+			}
+		}
+
+		//Add the item to listview if it fulfills all criteria
+		if (Matched) {
+			//Index
+			lvSearch->AddItem(L"%i", -1, ItemIndex + 1);
+
+			//Car number
+			lvSearch->SetItemText(ItemIndex, lpLogInfo->CarNumber, 1);
+
+			//Enter time
+			lvSearch->SetItemText(ItemIndex, L"%04u-%02u-%02u %02u:%02u:%02u", 2,
+				lpLogInfo->EnterTime.wYear, lpLogInfo->EnterTime.wMonth, lpLogInfo->EnterTime.wDay,
+				lpLogInfo->EnterTime.wHour, lpLogInfo->EnterTime.wMinute, lpLogInfo->EnterTime.wSecond);
+
+			if (lpLogInfo->LeaveTime.wYear) {												//The car has left
+				//Leave time
+				lvSearch->SetItemText(ItemIndex, L"%04u-%02u-%02u %02u:%02u:%02u", 3,
+					lpLogInfo->LeaveTime.wYear, lpLogInfo->LeaveTime.wMonth, lpLogInfo->LeaveTime.wDay,
+					lpLogInfo->LeaveTime.wHour, lpLogInfo->LeaveTime.wMinute, lpLogInfo->LeaveTime.wSecond);
+
+				//Fee
+				lvSearch->SetItemText(ItemIndex, L"$%.2f", 5, lpLogInfo->Fee);
+			}
+			else																			//The car is still parking
+				lvSearch->SetItemText(ItemIndex, L"Still Parking", 3);
+
+			//Car position
+			lvSearch->SetItemText(ItemIndex, L"%i", 4, lpLogInfo->CarPos + 1);
+
+			ItemIndex++;
+		}
+	}
+	SetFocus(lvSearch->hWnd);
+}
+
+/*
+Description:	To handle search car number checkbox checked event
+*/
+void chkSearchCarNumber_Click() {
+	//Enable / disable related control(s)
+	bool	bChecked = chkSearchCarNumber->GetChecked();
+
+	edSearchCarNumber->SetEnabled(bChecked);
+	if (bChecked)
+		SetFocus(edSearchCarNumber->hWnd);
+}
+
+/*
+Description:	To handle search after date checkbox checked event
+*/
+void chkSearchAfterDate_Click() {
+	//Enable / disable related control(s)
+	dtpSearchAfterDate->SetEnabled(chkSearchAfterDate->GetChecked());
+}
+
+/*
+Description:	To handle search before date checkbox checked event
+*/
+void chkSearchBeforeDate_Click() {
+	//Enable / disable related control(s)
+	dtpSearchBeforeDate->SetEnabled(chkSearchBeforeDate->GetChecked());
+}
+
+/*
+Description:	To handle search hours checkbox checked event
+*/
+void chkSearchHours_Click() {
+	//Enable / disable related control(s)
+	bool	bChecked = chkSearchHours->GetChecked();
+
+	comSearchCompare->SetEnabled(bChecked);
+	edSearchHours->SetEnabled(bChecked);
+	if (bChecked) {
+		comSearchCompare->SetSelItem(0);
+		SetFocus(edSearchHours->hWnd);
+	}
+}
+
+/*
 Description:    To handle main window creation event
 */
 void MainWindow_Create(HWND hWnd) {
@@ -1454,6 +1707,17 @@ void MainWindow_Create(HWND hWnd) {
 	btnLogin = make_shared<IceButton>(hWnd, IDC_LOGIN, btnLogin_Click);
 	btnCancelLogin = make_shared<IceButton>(hWnd, IDC_CANCELLOGIN, btnCancelLogin_Click);
 	lvLog = make_shared<IceListView>(hWnd, IDC_LISTVIEW_LOG);
+	lvSearch = make_shared<IceListView>(hWnd, IDC_LISTVIEW_SEARCH);
+	btnSearch = make_shared<IceButton>(hWnd, IDC_SEARCHBUTTON, btnSearch_Click);
+	edSearchHours = make_shared<IceEdit>(hWnd, IDC_SEARCHHOURSEDIT, PasswordEditProc);
+	edSearchCarNumber = make_shared<IceEdit>(hWnd, IDC_SEARCHCARNUMBEREDIT, SearchCarNumberEditProc);
+	chkSearchCarNumber = make_shared<IceCheckBox>(hWnd, IDC_SEARCHCARNUMBERCHECKBOX, chkSearchCarNumber_Click);
+	chkSearchAfterDate = make_shared<IceCheckBox>(hWnd, IDC_SEARCHAFTERDATECHECKBOX, chkSearchAfterDate_Click);
+	chkSearchBeforeDate = make_shared<IceCheckBox>(hWnd, IDC_SEARCHBEFOREDATECHECKBOX, chkSearchBeforeDate_Click);
+	chkSearchHours = make_shared<IceCheckBox>(hWnd, IDC_SEARCHPARKINGHOURSCHECKBOX, chkSearchHours_Click);
+	comSearchCompare = make_shared<IceComboBox>(hWnd, IDC_SEARCHCOMPARECOMBOBOX);
+	dtpSearchAfterDate = make_shared<IceDateTimePicker>(hWnd, IDC_SEARCHAFTERDATE, (VOID_EVENT)NULL);
+	dtpSearchBeforeDate = make_shared<IceDateTimePicker>(hWnd, IDC_SEARCHBEFOREDATE, (VOID_EVENT)NULL);
 	tabReport = make_shared<IceTab>(hWnd, IDC_REPORTTAB, tabReport_TabSelected);
 	PositionReportCanvas = make_shared<IceCanvas>(tabReport->hWnd, 0xffffff,
 		PositionReportCanvas_Paint, PositionReportCanvas_MouseMove, PositionReportCanvas_DoubleClick);
@@ -1474,32 +1738,47 @@ void MainWindow_Create(HWND hWnd) {
 	btnEnterOrExit = make_shared<IceButton>(hWnd, IDC_ENTEROREXITBUTTON, btnEnterOrExit_Click);
 	tmrRefreshTime = make_shared<IceTimer>(1000, tmrRefreshTime_Timer, true);
 	tmrRestoreWelcomeText = make_shared<IceTimer>(5000, tmrRestoreWelcomeText_Timer, false);
-	dtpHistoryDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYDATEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
-	dtpHistoryTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTIMEPICKER, (VOID_EVENT)dtpHistoryDate_DateTimeChanged);
-	dtpDailyDate = make_shared<IceDateTimePicker>(hWnd, IDC_DAILYDATEPICKER, (VOID_EVENT)dtpDailyDate_DateTimeChanged);
-	dtpMonthlyDate = make_shared<IceDateTimePicker>(hWnd, IDC_MONTHDATEPICKER, (VOID_EVENT)dtpMonthlyDate_DateTimeChanged);
-	sliHistoryTime = make_shared<IceSlider>(hWnd, IDC_HISTORYTIMESLIDER, (VOID_EVENT)sliHistoryTime_ValueChanged);
+	dtpHistoryDate = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYDATEPICKER, dtpHistoryDate_DateTimeChanged);
+	dtpHistoryTime = make_shared<IceDateTimePicker>(hWnd, IDC_HISTORYTIMEPICKER, dtpHistoryDate_DateTimeChanged);
+	dtpDailyDate = make_shared<IceDateTimePicker>(hWnd, IDC_DAILYDATEPICKER, dtpDailyDate_DateTimeChanged);
+	dtpMonthlyDate = make_shared<IceDateTimePicker>(hWnd, IDC_MONTHDATEPICKER, dtpMonthlyDate_DateTimeChanged);
+	sliHistoryTime = make_shared<IceSlider>(hWnd, IDC_HISTORYTIMESLIDER, sliHistoryTime_ValueChanged);
 	fraPasswordFrame = GetDlgItem(GetMainWindowHandle(), IDC_PASSWORDFRAME);
 	
 	//Set control properties
-	labWelcome->SetVisible(false);											//Hide unrelated controls
-	labPositionLeft->SetVisible(false);
-	labCarNumber->SetVisible(false);
-	labPrice->SetVisible(false);
-	labTime->SetVisible(false);
-	edCarNumber->SetVisible(false);
-	btnEnterOrExit->SetVisible(false);
-	labWelcome->Move(0, 20);												//Set the position of welcome label
-	lvLog->Move(0, 0);														//Set the position of listview
-	tabReport->Move(0, 0);													//Set the position of report tab
+	ShowPaymentFrame(false);												//Hide unrelated controls
+	labWelcome->Move(0, 20);												//Set control positions
+	lvLog->Move(0, 0);
+	lvSearch->Move(0, 60);
+	chkSearchCarNumber->Move(10, 10);
+	edSearchCarNumber->Move(10, 30);
+	chkSearchAfterDate->Move(130, 10);
+	dtpSearchAfterDate->Move(130, 30);
+	chkSearchBeforeDate->Move(280, 10);
+	dtpSearchBeforeDate->Move(280, 30);
+	chkSearchHours->Move(430, 10);
+	comSearchCompare->Move(430, 30);
+	edSearchHours->Move(500, 30);
+	btnSearch->Move(575, 20);
+	tabReport->Move(0, 0);
+	comSearchCompare->AddItem(L">");										//Add items to comparison mode combobox
+	comSearchCompare->AddItem(L"=");
+	comSearchCompare->AddItem(L"<");
 	SendMessage(edPassword->hWnd, EM_SETLIMITTEXT, 20, 0);					//Max length of password editbox
 	SendMessage(edCarNumber->hWnd, EM_SETLIMITTEXT, 10, 0);					//Max length of car number editbox
+	SendMessage(edSearchCarNumber->hWnd, EM_SETLIMITTEXT, 10, 0);			//Max length of search car number editbox
 	lvLog->AddColumn(L"#", 40);												//Add columns to log listview
 	lvLog->AddColumn(L"Car Number", 120);
 	lvLog->AddColumn(L"Enter Time (YYYY-MM-DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 145);
 	lvLog->AddColumn(L"Position", 80);
 	lvLog->AddColumn(L"Fee", 70);
+	lvSearch->AddColumn(L"#", 40);											//Add columns to search listview
+	lvSearch->AddColumn(L"Car Number", 120);
+	lvSearch->AddColumn(L"Enter Time (YYYY-MM-DD HH:MM:SS)", 145);
+	lvSearch->AddColumn(L"Leave Time (YYYY/MM/DD HH:MM:SS)", 145);
+	lvSearch->AddColumn(L"Position", 80);
+	lvSearch->AddColumn(L"Fee", 70);
 	tabReport->InsertTab(L"Position Info");									//Add tabs to tab control
 	tabReport->InsertTab(L"History");
 	tabReport->InsertTab(L"Daily Report");
@@ -1514,7 +1793,10 @@ void MainWindow_Create(HWND hWnd) {
 	SetParent(dtpMonthlyDate->hWnd, MonthlyReportCanvas->hWnd);
 	SetParent(sliHistoryTime->hWnd, HistoryReportCanvas->hWnd);
 	SendMessage(dtpMonthlyDate->hWnd, DTM_SETFORMAT, 0, (LPARAM)L"yyyy' / 'MM");
+	SendMessage(dtpSearchAfterDate->hWnd, DTM_SETFORMAT, 0, (LPARAM)L"yyyy'/'MM'/'dd' 'HH':'mm':'ss");
+	SendMessage(dtpSearchBeforeDate->hWnd, DTM_SETFORMAT, 0, (LPARAM)L"yyyy'/'MM'/'dd' 'HH':'mm':'ss");
 	SetProp(FindWindowEx(lvLog->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvLog_HeaderClicked);
+	SetProp(FindWindowEx(lvSearch->hWnd, NULL, L"SysHeader32", NULL), L"HeaderClickEvent", (HANDLE)lvSearch_HeaderClicked);
 
 	//Set canvas positions
 	//There's an updown control in the tab control, so we can determine
@@ -1539,6 +1821,17 @@ void MainWindow_Create(HWND hWnd) {
 	ToolTip->SetToolTip(dtpMonthlyDate->hWnd, L"Set report month");
 	ToolTip->SetToolTip(DailyReportCanvas->hWnd, L"Double click to view detailed hourly position info");
 	ToolTip->SetToolTip(MonthlyReportCanvas->hWnd, L"Double click to view detailed daily report of the day");
+	ToolTip->SetToolTip(edSearchCarNumber->hWnd,
+		L"The car number you want to search\n"							\
+		L"You may use the following characters for searching:\n"		\
+		L"? : A single character (Number/Letter)\n"						\
+		L"# : A single number\n"										\
+		L"@ : A single letter\n"										\
+		L"* : Anything of any length");
+	ToolTip->SetToolTip(dtpSearchAfterDate->hWnd, L"The car is entered after this date");
+	ToolTip->SetToolTip(dtpSearchBeforeDate->hWnd, L"The car is entered before this date");
+	ToolTip->SetToolTip(comSearchCompare->hWnd, L"Select hour comparison mode");
+	ToolTip->SetToolTip(edSearchHours->hWnd, L"Parked hours");
 
 	//Load data file
 	LogFile = make_shared<IceEncryptedFile>(L"Log.dat");
@@ -1555,6 +1848,7 @@ void mnuLock_Click() {
 	SetMenu(GetMainWindowHandle(), NULL);									//Remove window menu
 	lvLog->SetVisible(false);												//Hide unrelated controls
 	tabReport->SetVisible(false);
+	ShowSearchFrame(false);
 	ShowPasswordFrame();
 	SetFocus(edPassword->hWnd);
 }
@@ -1565,7 +1859,7 @@ Description:	To handle Exit menu event
 void mnuExit_Click() {
 	if (CurrStatus == 1) {												//Payment mode, user is trying to exit payment mode
 		ShowPasswordFrame();
-		HidePaymentFrame();
+		ShowPaymentFrame(false);
 		CurrStatus = 3;														//Enter unlocking mode
 
 		RECT	MainWindowSize;
@@ -1576,7 +1870,7 @@ void mnuExit_Click() {
 		SetFocus(edPassword->hWnd);											//Let the password editbox has focus
 	}
 	else if (CurrStatus == 3) {											//Unlocking mode, user cancelled exiting payment mode
-		HidePasswordFrame();
+		ShowPasswordFrame(false);
 		ShowPaymentFrame();
 		CurrStatus = 1;														//Return to payment mode
 
@@ -1586,10 +1880,10 @@ void mnuExit_Click() {
 		return;
 	else {																//Normal mode, user is goint to exit the system
 		//Show a prompt when exiting
-		if (1)/*ToDo: uncomment (MessageBox(GetMainWindowHandle(),
+		if (MessageBox(GetMainWindowHandle(),
 			L"Exit Parking System?",
 			L"Confirm",
-			MB_YESNO | MB_ICONQUESTION) == IDYES)*/ {
+			MB_YESNO | MB_ICONQUESTION) == IDYES) {
 
 			//Close the window and exit the program
 			DestroyWindow(GetMainWindowHandle());
@@ -1656,6 +1950,7 @@ void mnuLog_Click() {
 		lvLog->SetItemText(i, L"%i", 4, LogFile->FileContent.LogData[i].CarPos + 1);
 	}
 	tabReport->SetVisible(false);											//Hide report tab
+	ShowSearchFrame(false);													//Hide search related controls
 	lvLog->SetVisible(true);												//Show log listview
 	CurrStatus = 2;															//Change status to log mode
 
@@ -1669,7 +1964,15 @@ void mnuLog_Click() {
 Description:	To handle search log menu event
 */
 void mnuSearchLog_Click() {
+	tabReport->SetVisible(false);											//Hide unrelated controls
+	lvLog->SetVisible(false);
+	CurrStatus = 9;															//Update program status
+	ShowSearchFrame();
 
+	RECT	MainWindowSize;
+	GetClientRect(GetMainWindowHandle(), &MainWindowSize);					//Get window size
+	MainWindow_Resize(MainWindowSize.right - MainWindowSize.left,
+		MainWindowSize.bottom - MainWindowSize.top);						//Invoke window resize event to resize listview
 }
 
 /*
@@ -1677,6 +1980,7 @@ Description:	To handle show report menu event
 */
 void mnuReport_Click() {
 	lvLog->SetVisible(false);
+	ShowSearchFrame(false);
 	tabReport->SetVisible(true);
 	tabReport->SetSel(0);													//Set selected tab
 	tabReport_TabSelected();												//Invoke tab selected event to show canvas
@@ -1697,6 +2001,38 @@ void mnuOptions_Click() {
 	//Create the settings window and pass SettingsWindow_Create() to the lParam of its WM_INITDIALOG message
 	DialogBoxParam(GetProgramInstance(), MAKEINTRESOURCE(IDD_SETTINGSWINDOW), NULL,
 		SettingsWindowProc, (LPARAM)SettingsWindow_Create);
+}
+
+/*
+Description:	To handle About menu event
+*/
+void mnuAbout_Click() {
+	MessageBox(GetMainWindowHandle(),
+		L"This project was supposed to be my SBA project for HKDSE...\n" \
+		L"But I need to say goodbye to HK... cuz I am seeking for a higher level of education.\n" \
+		L"And I don't think I can get into a good university or find a great job after HKDSE.\n"
+		L"Actually, I don't think the HK government has put enough effort into ICT, and ICT does not seem to be as popular as other subjects.\n" \
+		L"I have learned programming for nearly 10 years, but unfortunately, I didn't have any opportunities to apply my ability.\n" \
+		L"To be honest, technology in HK is lagging behind many places.\n" \
+		L"I believe that one of the major reasons led to such situation is because capable students didn't get enough attention.\n" \
+		L"I know that the HK government is pushing STEM education but... Is it truly fruitful?\n" \
+		L"Tons of money is wasted on stupid softwares and useless devices which won't help those capable students at all.\n" \
+		L"Competitions? Sorry, there's no any competitions (At least I havn't heard any) to apply my software development skills.\n" \
+		L"I sincerely hope that the government and schools can pay more attention to ICT.\n\n" \
+		L"Developed by SweetIceLolly (Hanson)\n" \
+		L"Opened source under MIT license\n" \
+		L"Github: https://github.com/SweetIceLolly\n" \
+		L"QQ: 1257472418\n" \
+		L"Gmail: handsomehanson233@gmail.com" \
+		L"Thank you for reading the above text, and thank you for using this software.\n"
+		, L"About", MB_ICONINFORMATION);
+}
+
+/*
+Description:	To handle How to Use menu event
+*/
+void mnuHowToUse_Click() {
+	MessageBox(GetMainWindowHandle(), L"Use with your brain and hands.", L"How to Use", MB_ICONINFORMATION);
 }
 
 /*
